@@ -1,0 +1,9 @@
+{
+  "name":"Mercado Caixa Pro",
+  "short_name":"Caixa Pro",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#0b1220",
+  "theme_color":"#0f172a",
+  "description":"Caixa, scanner e controle inteligente de estoque para supermercado"
+}

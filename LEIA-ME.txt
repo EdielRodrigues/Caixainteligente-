@@ -1,0 +1,19 @@
+MERCADO CAIXA PRO — V3 ENTRADA INTELIGENTE
+
+Novidades:
+- Layout responsivo reorganizado para celular Android e computador.
+- Tabelas viram cartões no celular para evitar rolagem horizontal.
+- Entrada de mercadoria por câmera: escaneie código de barras/QR.
+- No computador, usa webcam; no Android, prioriza câmera traseira.
+- Entrada por código digitado ou leitor USB também disponível.
+- Produto existente é localizado automaticamente e já fica pronto para informar quantidade e custo.
+- Código novo abre cadastro do produto com o código preenchido.
+- Caixa continua lendo código pela câmera e adicionando o produto à venda.
+- Cadastro de produto também pode capturar o código pela câmera.
+- Estoque, vendas, entradas, movimentações e backup continuam salvos no aparelho.
+
+IMPORTANTE SOBRE CÂMERA:
+O navegador precisa permitir acesso à câmera. Em site publicado, use HTTPS. Chrome/Edge atualizado é recomendado.
+
+INSTALAÇÃO PWA:
+Publique os arquivos em um servidor HTTPS e use a opção “Instalar app”/“Adicionar à tela inicial” do navegador.
