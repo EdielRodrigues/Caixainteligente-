@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V10 Interface Profissional</title>
+  <title>Mercado Caixa Pro V11 Interface Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -157,12 +157,22 @@ main{width:100%}
  .mobilebar button{font-size:9px!important;padding:7px 0!important;letter-spacing:-.15px}
  .cartitem{grid-template-columns:minmax(0,1fr) auto auto 22px!important}
 }
+
+.payment-methods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 12px}
+.pay-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 8px;border-radius:12px;border:1px solid rgba(127,127,127,.22);background:rgba(127,127,127,.08);font-weight:800;cursor:pointer}
+.pay-btn.active{outline:2px solid #22c55e;background:rgba(34,197,94,.14)}
+.payment-extra{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.payment-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.payment-summary .stat{padding:10px}
+.payment-summary .stat strong{font-size:16px}
+@media(max-width:600px){.payment-summary{grid-template-columns:1fr 1fr}.payment-extra{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V10 Busca Multi-Base</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V11 Pagamentos Avançados</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -188,7 +198,16 @@ main{width:100%}
     <section id="caixa" class="screen">
       <div class="cash-layout">
         <div class="panel" style="margin-top:0"><h3>Nova venda</h3><div class="scanrow"><input id="saleSearch" placeholder="Digite nome ou código do produto"/><button class="btn blue" id="addSearchBtn">Adicionar</button><button class="btn primary" id="scanSaleBtn" title="Ler código pela câmera">📷 Ler código</button></div><div id="searchResults" style="margin-top:8px"></div><div class="cart" id="cart"></div></div>
-        <div class="panel" style="margin-top:0"><h3>Resumo da venda</h3><div class="field"><label>Forma de pagamento</label><select id="payment"><option>Dinheiro</option><option>Pix</option><option>Cartão de débito</option><option>Cartão de crédito</option></select></div><div class="field" style="margin-top:9px"><label>Desconto (R$)</label><input id="discount" type="number" step="0.01" min="0" value="0"/></div><div class="field" style="margin-top:9px"><label>Valor recebido (R$)</label><input id="received" type="number" step="0.01" min="0" placeholder="Para calcular troco"/></div><div class="totalbox"><div class="totalline"><span>Subtotal</span><b id="subtotal">R$ 0,00</b></div><div class="totalline"><span>Desconto</span><b id="discountView">R$ 0,00</b></div><div class="totalline"><span>Troco</span><b id="changeView">R$ 0,00</b></div><hr style="border-color:#315b3e"><strong id="grandTotal">R$ 0,00</strong></div><button class="btn primary" id="finishSale" style="width:100%;margin-top:10px">Finalizar venda</button><button class="btn ghost" id="clearCart" style="width:100%;margin-top:8px">Limpar carrinho</button></div>
+        <div class="panel" style="margin-top:0"><h3>Resumo da venda</h3><div class="field"><label>Forma de pagamento</label>
+<div class="payment-methods" id="paymentMethods">
+  <button type="button" class="pay-btn active" data-pay="Dinheiro">💵 Dinheiro</button>
+  <button type="button" class="pay-btn" data-pay="Pix">📱 Pix</button>
+  <button type="button" class="pay-btn" data-pay="Cartão de débito">💳 Débito</button>
+  <button type="button" class="pay-btn" data-pay="Cartão de crédito">💳 Crédito</button>
+</div>
+<select id="payment" style="display:none"><option>Dinheiro</option><option>Pix</option><option>Cartão de débito</option><option>Cartão de crédito</option></select>
+<div id="paymentExtra" class="payment-extra"></div>
+</div><div class="field" style="margin-top:9px"><label>Desconto (R$)</label><input id="discount" type="number" step="0.01" min="0" value="0"/></div><div class="field" style="margin-top:9px"><label>Valor recebido (R$)</label><input id="received" type="number" step="0.01" min="0" placeholder="Para calcular troco"/></div><div class="totalbox"><div class="totalline"><span>Subtotal</span><b id="subtotal">R$ 0,00</b></div><div class="totalline"><span>Desconto</span><b id="discountView">R$ 0,00</b></div><div class="totalline"><span>Troco</span><b id="changeView">R$ 0,00</b></div><hr style="border-color:#315b3e"><strong id="grandTotal">R$ 0,00</strong></div><button class="btn primary" id="finishSale" style="width:100%;margin-top:10px">Finalizar venda</button><button class="btn ghost" id="clearCart" style="width:100%;margin-top:8px">Limpar carrinho</button></div>
       </div>
     </section>
 
@@ -601,7 +620,7 @@ function renderPro(){
   lotList.innerHTML=state.lots.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999')).map(l=>{let d=l.expiry?Math.ceil((new Date(l.expiry+'T12:00:00')-today)/86400000):99999,status=d<0?'VENCIDO':d<=7?'Vence em '+d+' dia(s)':d<=30?'Vence em '+d+' dias':'OK',cls=d<0?'pro-danger':d<=30?'pro-warn':'pro-ok';return `<div class="pro-item"><div><b>${esc(l.productName)}</b><div class="pro-muted">Lote ${esc(l.lot||'—')} · ${esc(l.code||'')}</div></div><div>${l.expiry?new Date(l.expiry+'T12:00:00').toLocaleDateString('pt-BR'):'Sem validade'}</div><div class="pro-hide-mobile">${l.qty} un.</div><div><span class="pro-badge ${cls}">${status}</span></div><div class="pro-actions"><button class="btn red" onclick="deleteLot('${l.id}')">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum lote registrado.</div>';
   supplierList.innerHTML=state.suppliers.map(x=>`<div class="pro-item"><div><b>${esc(x.name)}</b><div class="pro-muted">${esc(x.note||'')}</div></div><div>${esc(x.phone||'—')}</div><div class="pro-hide-mobile">${esc(x.doc||'—')}</div><div class="pro-hide-mobile">${new Date(x.created).toLocaleDateString('pt-BR')}</div><div class="pro-actions"><button class="btn red" onclick="deleteSupplier('${x.id}')">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum fornecedor cadastrado.</div>';
   let open=state.cashSessions.find(x=>!x.closedAt);
-  cashControl.innerHTML=open?`<div class="grid4"><div class="stat"><small>Operador</small><strong style="font-size:16px">${esc(open.operator)}</strong></div><div class="stat"><small>Fundo inicial</small><strong>${money(open.opening)}</strong></div><div class="stat"><small>Aberto em</small><strong style="font-size:13px">${new Date(open.openedAt).toLocaleString('pt-BR')}</strong></div><div class="stat"><small>Status</small><strong style="font-size:16px">ABERTO</strong></div></div><div class="formgrid" style="margin-top:10px"><div class="field"><label>Dinheiro contado</label><input id="cashCounted" type="number" min="0" step="0.01"/></div><div class="field"><label>Observação</label><input id="cashClosingNote"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn red" onclick="closeCashSession()">🔐 Fechar caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div><div style="font-size:12px;color:var(--muted);margin-top:8px">Somente o gerente com PIN pode concluir o fechamento.</div>`:`<div class="formgrid"><div class="field"><label>Operador</label><input id="cashOperator" placeholder="Nome do operador"/></div><div class="field"><label>Fundo inicial (R$)</label><input id="cashOpening" type="number" min="0" step="0.01" value="0"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" onclick="openCashSession()">Abrir caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div>`;
+  cashControl.innerHTML=open?`<div class="grid4"><div class="stat"><small>Operador</small><strong style="font-size:16px">${esc(open.operator)}</strong></div><div class="stat"><small>Fundo inicial</small><strong>${money(open.opening)}</strong></div><div class="stat"><small>Aberto em</small><strong style="font-size:13px">${new Date(open.openedAt).toLocaleString('pt-BR')}</strong></div><div class="stat"><small>Status</small><strong style="font-size:16px">ABERTO</strong></div></div>${(()=>{let pt=paymentTotalsForSession(open);return `<div class="payment-summary"><div class="stat"><small>💵 Dinheiro</small><strong>${money(pt.Dinheiro)}</strong></div><div class="stat"><small>📱 Pix</small><strong>${money(pt.Pix)}</strong></div><div class="stat"><small>💳 Débito</small><strong>${money(pt['Cartão de débito'])}</strong></div><div class="stat"><small>💳 Crédito</small><strong>${money(pt['Cartão de crédito'])}</strong></div></div>`})()}<div class="formgrid" style="margin-top:10px"><div class="field"><label>Dinheiro contado</label><input id="cashCounted" type="number" min="0" step="0.01"/></div><div class="field"><label>Observação</label><input id="cashClosingNote"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn red" onclick="closeCashSession()">🔐 Fechar caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div><div style="font-size:12px;color:var(--muted);margin-top:8px">Somente o gerente com PIN pode concluir o fechamento.</div>`:`<div class="formgrid"><div class="field"><label>Operador</label><input id="cashOperator" placeholder="Nome do operador"/></div><div class="field"><label>Fundo inicial (R$)</label><input id="cashOpening" type="number" min="0" step="0.01" value="0"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" onclick="openCashSession()">Abrir caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div>`;
   cashHistory.innerHTML=state.cashSessions.filter(x=>x.closedAt).slice().reverse().slice(0,20).map(x=>`<div class="pro-item"><div><b>${esc(x.operator)}</b><div class="pro-muted">${new Date(x.openedAt).toLocaleString('pt-BR')}</div></div><div>Inicial<br><b>${money(x.opening)}</b></div><div>Contado<br><b>${money(x.counted)}</b></div><div class="pro-hide-mobile">Fechado<br>${new Date(x.closedAt).toLocaleString('pt-BR')}</div><span class="pro-badge pro-ok">Fechado</span></div>`).join('')||'<div class="empty">Nenhum fechamento realizado.</div>';
   replenishmentList.innerHTML=low.map(p=>{let suggested=Math.max((p.min*2)-p.stock,1);return `<div class="pro-item"><div><b>${esc(p.name)}</b><div class="pro-muted">${esc(p.code)} · ${esc(p.category||'')}</div></div><div>Atual<br><b>${p.stock}</b></div><div>Mínimo<br><b>${p.min}</b></div><div>Sugestão<br><b>${suggested} un.</b></div><span class="pro-badge pro-warn">REPOR</span></div>`}).join('')||'<div class="empty">Estoque em dia. Nenhum item abaixo do mínimo.</div>';
 }
@@ -609,7 +628,7 @@ function switchProTab(tab){document.querySelectorAll('.propage').forEach(x=>x.cl
 window.deleteLot=id=>{if(confirm('Excluir este lote/validade?')){state.lots=state.lots.filter(x=>x.id!==id);save()}};
 window.deleteSupplier=id=>{if(confirm('Excluir este fornecedor?')){state.suppliers=state.suppliers.filter(x=>x.id!==id);save()}};
 window.openCashSession=()=>{let op=document.getElementById('cashOperator')?.value.trim();if(!op)return toast('Informe o operador');state.cashSessions.push({id:proUid(),operator:op,opening:Number(document.getElementById('cashOpening').value)||0,openedAt:nowISO(),closedAt:null});save();toast('Caixa aberto')};
-window.closeCashSession=async()=>{let x=state.cashSessions.find(x=>!x.closedAt);if(!x)return;if(!(await verifyManagerPin()))return;x.counted=Number(document.getElementById('cashCounted').value)||0;x.note=document.getElementById('cashClosingNote').value.trim();x.closedAt=nowISO();x.closedByManager=true;x.managerAuthorizedAt=nowISO();save();toast('Caixa fechado com autorização do gerente')};
+window.closeCashSession=async()=>{let x=state.cashSessions.find(x=>!x.closedAt);if(!x)return;if(!(await verifyManagerPin()))return;x.counted=Number(document.getElementById('cashCounted').value)||0;x.note=document.getElementById('cashClosingNote').value.trim();x.paymentTotals=paymentTotalsForSession(x);x.closedAt=nowISO();x.closedByManager=true;x.managerAuthorizedAt=nowISO();save();toast('Caixa fechado com autorização do gerente')};
 document.querySelectorAll('.protab').forEach(b=>b.onclick=()=>switchProTab(b.dataset.protab));
 document.getElementById('saveLotBtn').onclick=()=>{let p=state.products.find(x=>x.id===lotProduct.value),qty=Number(lotQty.value)||0;if(!p||qty<=0)return toast('Selecione o produto e informe a quantidade');state.lots.push({id:proUid(),productId:p.id,productName:p.name,code:p.code,lot:lotNumber.value.trim(),expiry:lotExpiry.value,qty,created:nowISO()});lotNumber.value='';lotExpiry.value='';lotQty.value=1;save();toast('Lote salvo')};
 document.getElementById('saveSupplierBtn').onclick=()=>{let name=supplierName.value.trim();if(!name)return toast('Informe o fornecedor');state.suppliers.push({id:proUid(),name,phone:supplierPhone.value.trim(),doc:supplierDoc.value.trim(),note:supplierNote.value.trim(),created:nowISO()});supplierName.value=supplierPhone.value=supplierDoc.value=supplierNote.value='';save();toast('Fornecedor salvo')};
@@ -617,7 +636,68 @@ document.getElementById('saveSupplierBtn').onclick=()=>{let name=supplierName.va
 document.getElementById('newProductBtn').onclick=()=>openProduct();document.getElementById('closeModal').onclick=()=>document.getElementById('productModal').classList.remove('open');
 document.getElementById('saveProduct').onclick=()=>{let id=document.getElementById('productId').value;let obj={id:id||crypto.randomUUID(),name:document.getElementById('pName').value.trim(),code:document.getElementById('pCode').value.trim(),category:document.getElementById('pCategory').value.trim(),brand:document.getElementById('pBrand').value.trim(),package:document.getElementById('pPackage').value.trim(),min:Number(document.getElementById('pMin').value)||0,stock:Number(document.getElementById('pStock').value)||0,cost:Number(document.getElementById('pCost').value)||0,price:Number(document.getElementById('pPrice').value)||0};if(!obj.name)return toast('Informe o nome do produto');if(obj.code){let dup=state.products.find(p=>p.id!==id&&normalizeCode(p.code)===normalizeCode(obj.code));if(dup)return toast('Este código já pertence a '+dup.name)}let old=state.products.find(p=>p.id===id);if(old){let diff=obj.stock-old.stock;if(diff!==0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'ajuste',productId:obj.id,productName:obj.name,qty:diff,unit:obj.cost,total:diff*obj.cost,note:'Ajuste manual de estoque'});Object.assign(old,obj)}else{state.products.push(obj);if(obj.stock>0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:obj.id,productName:obj.name,qty:obj.stock,unit:obj.cost,total:obj.stock*obj.cost,note:'Estoque inicial'})}document.getElementById('productModal').classList.remove('open');let savedId=obj.id;save();if(pendingEntryAfterSave){pendingEntryAfterSave=false;pendingEntryCode='';nav('entradas');let saved=state.products.find(p=>p.id===savedId);if(saved)selectEntryProduct(saved)}toast('Produto salvo')};
 document.getElementById('saveEntry').onclick=()=>{let id=document.getElementById('entryProduct').value,p=state.products.find(x=>x.id===id),qty=Number(document.getElementById('entryQty').value)||0,cost=Number(document.getElementById('entryCost').value);if(!p||qty<=0)return toast('Informe produto e quantidade');if(!Number.isNaN(cost)&&cost>0)p.cost=cost;p.stock+=qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:p.id,productName:p.name,qty,unit:p.cost,total:qty*p.cost,note:document.getElementById('entryNote').value.trim()});document.getElementById('entryQty').value=1;document.getElementById('entryCost').value=p.cost||'';document.getElementById('entryNote').value='';save();document.getElementById('entryProduct').value=p.id;renderEntrySelected();toast('Entrada registrada: +'+qty+' '+p.name)};
-document.getElementById('finishSale').onclick=()=>{if(!cart.length)return toast('Carrinho vazio');for(let c of cart){let p=state.products.find(x=>x.id===c.id);if(!p||p.stock<c.qty)return toast('Estoque insuficiente para '+c.name)}let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.max(0,Number(document.getElementById('discount').value)||0),total=Math.max(0,sub-disc),pay=document.getElementById('payment').value,saleId=crypto.randomUUID();for(let c of cart){let p=state.products.find(x=>x.id===c.id);p.stock-=c.qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'venda',saleId,productId:p.id,productName:p.name,qty:-c.qty,unit:c.price,total:c.price*c.qty,note:pay})}state.sales.push({id:saleId,date:nowISO(),items:cart.map(c=>({id:c.id,name:c.name,qty:c.qty,price:c.price})),subtotal:sub,discount:disc,total,payment:pay});cart=[];document.getElementById('discount').value=0;document.getElementById('received').value='';save();toast('Venda finalizada com sucesso')};
+
+function renderPaymentExtra(){
+  const pay=document.getElementById('payment').value;
+  const box=document.getElementById('paymentExtra');
+  if(!box)return;
+  const receivedWrap=document.getElementById('received')?.closest('.field');
+  if(receivedWrap)receivedWrap.style.display=pay==='Dinheiro'?'':'none';
+  if(pay==='Cartão de crédito'){
+    box.innerHTML=`<div class="field"><label>Parcelas</label><select id="cardInstallments">${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}x</option>`).join('')}</select></div><div class="field"><label>Autorização / NSU (opcional)</label><input id="paymentReference" placeholder="Código da maquininha"/></div>`;
+  }else if(pay==='Cartão de débito'){
+    box.innerHTML=`<div class="field"><label>Autorização / NSU (opcional)</label><input id="paymentReference" placeholder="Código da maquininha"/></div><div class="field"><label>Bandeira (opcional)</label><input id="cardBrand" placeholder="Visa, Master..."/></div>`;
+  }else if(pay==='Pix'){
+    box.innerHTML=`<div class="field"><label>Identificador Pix (opcional)</label><input id="paymentReference" placeholder="ID / comprovante"/></div><div class="field"><label>Status</label><select id="pixStatus"><option value="Confirmado">✅ Pix confirmado</option><option value="Pendente">⏳ Pendente</option></select></div>`;
+  }else{
+    box.innerHTML='';
+  }
+  calcTotals();
+}
+function choosePayment(pay){
+  const sel=document.getElementById('payment');sel.value=pay;
+  document.querySelectorAll('.pay-btn').forEach(b=>b.classList.toggle('active',b.dataset.pay===pay));
+  renderPaymentExtra();
+}
+function getPaymentDetails(){
+  const pay=document.getElementById('payment').value;
+  return {
+    payment:pay,
+    installments:pay==='Cartão de crédito'?Number(document.getElementById('cardInstallments')?.value||1):1,
+    reference:document.getElementById('paymentReference')?.value.trim()||'',
+    cardBrand:document.getElementById('cardBrand')?.value.trim()||'',
+    pixStatus:document.getElementById('pixStatus')?.value||''
+  };
+}
+function paymentTotalsForSession(session){
+  const start=new Date(session.openedAt).getTime(), end=session.closedAt?new Date(session.closedAt).getTime():Date.now();
+  const sales=state.sales.filter(s=>{const t=new Date(s.date).getTime();return t>=start&&t<=end});
+  const out={Dinheiro:0,Pix:0,'Cartão de débito':0,'Cartão de crédito':0};
+  sales.forEach(s=>{if(out[s.payment]!==undefined)out[s.payment]+=Number(s.total||0)});
+  return out;
+}
+document.querySelectorAll('.pay-btn').forEach(b=>b.onclick=()=>choosePayment(b.dataset.pay));
+renderPaymentExtra();
+
+document.getElementById('finishSale').onclick=()=>{
+  if(!cart.length)return toast('Carrinho vazio');
+  for(let c of cart){let p=state.products.find(x=>x.id===c.id);if(!p||p.stock<c.qty)return toast('Estoque insuficiente para '+c.name)}
+  let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.max(0,Number(discount.value)||0),total=Math.max(0,sub-disc),details=getPaymentDetails(),pay=details.payment,saleId=crypto.randomUUID();
+  if(pay==='Dinheiro'){
+    const rec=Number(received.value)||0;
+    if(rec<total)return toast('Valor recebido menor que o total');
+    details.received=rec;details.change=Math.max(0,rec-total);
+  }
+  if(pay==='Pix' && details.pixStatus==='Pendente'){
+    if(!confirm('O Pix está marcado como PENDENTE. Deseja registrar a venda mesmo assim?'))return;
+  }
+  for(let c of cart){
+    let p=state.products.find(x=>x.id===c.id);p.stock-=c.qty;
+    state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'venda',saleId,productId:p.id,productName:p.name,qty:-c.qty,unit:c.price,total:c.price*c.qty,note:pay});
+  }
+  state.sales.push({id:saleId,date:nowISO(),items:cart.map(c=>({id:c.id,name:c.name,qty:c.qty,price:c.price})),subtotal:sub,discount:disc,total,payment:pay,paymentDetails:details});
+  cart=[];discount.value=0;received.value='';choosePayment('Dinheiro');save();toast('Venda recebida em '+pay);
+};
 document.getElementById('clearCart').onclick=()=>{cart=[];renderCart()};document.getElementById('scanSaleBtn').onclick=()=>openScanner('sale');document.getElementById('scanProductBtn').onclick=()=>openScanner('product');document.getElementById('scanEntryBtn').onclick=()=>openScanner('entry');document.getElementById('findEntryCodeBtn').onclick=findEntryByCode;document.getElementById('entryCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findEntryByCode()}});document.getElementById('entryProduct').onchange=()=>{let p=state.products.find(x=>x.id===document.getElementById('entryProduct').value);if(p)selectEntryProduct(p);else renderEntrySelected()};document.getElementById('newEntryProductBtn').onclick=()=>{pendingEntryAfterSave=true;pendingEntryCode='';openProduct()};document.getElementById('clearEntryBtn').onclick=()=>{document.getElementById('entryCode').value='';document.getElementById('entryProduct').value='';document.getElementById('entryQty').value=1;document.getElementById('entryCost').value='';document.getElementById('entryNote').value='';renderEntrySelected()};document.getElementById('closeScanner').onclick=()=>stopCamera();document.getElementById('stopScannerBtn').onclick=()=>stopCamera();document.getElementById('switchCameraBtn').onclick=async()=>{scannerFacing=scannerFacing==='environment'?'user':'environment';await startCamera()};document.getElementById('torchBtn').onclick=async()=>{if(!scannerTrack)return;let caps=scannerTrack.getCapabilities?.()||{};if(!caps.torch)return;let cur=scannerTrack.getSettings?.().torch||false;try{await scannerTrack.applyConstraints({advanced:[{torch:!cur}]});document.getElementById('torchBtn').textContent=!cur?'🔦 Desligar lanterna':'🔦 Lanterna'}catch(e){toast('Lanterna não disponível')}};
 
 async function refreshAllProductsOnline(){
