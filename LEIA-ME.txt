@@ -1,19 +1,14 @@
-MERCADO CAIXA PRO — V3 ENTRADA INTELIGENTE
+MERCADO CAIXA PRO V4 — ESTOQUE INTELIGENTE
 
 Novidades:
-- Layout responsivo reorganizado para celular Android e computador.
-- Tabelas viram cartões no celular para evitar rolagem horizontal.
-- Entrada de mercadoria por câmera: escaneie código de barras/QR.
-- No computador, usa webcam; no Android, prioriza câmera traseira.
-- Entrada por código digitado ou leitor USB também disponível.
-- Produto existente é localizado automaticamente e já fica pronto para informar quantidade e custo.
-- Código novo abre cadastro do produto com o código preenchido.
-- Caixa continua lendo código pela câmera e adicionando o produto à venda.
-- Cadastro de produto também pode capturar o código pela câmera.
-- Estoque, vendas, entradas, movimentações e backup continuam salvos no aparelho.
+- Entrada por câmera no Android ou webcam no computador.
+- Leitura de EAN/UPC/Code 128/QR quando suportado pelo navegador.
+- Primeiro procura o código no estoque local.
+- Produto novo: consulta automática online no Open Food Facts.
+- Quando encontrado, cadastra nome, marca, categoria e embalagem automaticamente.
+- Depois da identificação, basta informar a quantidade recebida; custo é opcional.
+- Se não houver dados online, abre cadastro manual uma única vez.
+- Leitor USB também funciona digitando o código e Enter.
 
-IMPORTANTE SOBRE CÂMERA:
-O navegador precisa permitir acesso à câmera. Em site publicado, use HTTPS. Chrome/Edge atualizado é recomendado.
-
-INSTALAÇÃO PWA:
-Publique os arquivos em um servidor HTTPS e use a opção “Instalar app”/“Adicionar à tela inicial” do navegador.
+IMPORTANTE:
+A consulta automática precisa de internet. A câmera funciona melhor em Chrome/Edge e em site HTTPS. Nem todo código existe em bases públicas; nesses casos o cadastro manual continua disponível. Preço de custo e preço de venda são dados do próprio mercado e não vêm do código de barras.
