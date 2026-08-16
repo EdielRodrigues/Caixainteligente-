@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V6 Profissional</title>
+  <title>Mercado Caixa Pro V7 Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -93,7 +93,7 @@
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V6 Profissional Inteligente</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V7 Dados Automáticos</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -124,7 +124,7 @@
     </section>
 
     <section id="estoque" class="screen">
-      <div class="panel" style="margin-top:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>Produtos / Estoque</h3><button class="btn primary" id="newProductBtn">+ Novo produto</button></div><div class="searchbar" style="margin-bottom:10px"><input id="stockSearch" placeholder="Buscar produto, categoria ou código"/><button class="btn" id="stockSearchBtn">Buscar</button></div><div class="tablewrap"><table><thead><tr><th>Produto</th><th>Código</th><th>Categoria</th><th>Estoque</th><th>Custo</th><th>Venda</th><th>Status</th><th>Ações</th></tr></thead><tbody id="productTable"></tbody></table></div></div>
+      <div class="panel" style="margin-top:0"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><h3>Produtos / Estoque</h3><div class="row-actions"><button class="btn blue" id="refreshOnlineBtn">🌐 Completar dados online</button><button class="btn primary" id="newProductBtn">+ Novo produto</button></div></div><div class="searchbar" style="margin-bottom:10px"><input id="stockSearch" placeholder="Buscar produto, categoria ou código"/><button class="btn" id="stockSearchBtn">Buscar</button></div><div class="tablewrap"><table><thead><tr><th>Produto</th><th>Código</th><th>Categoria</th><th>Estoque</th><th>Custo</th><th>Venda</th><th>Status</th><th>Ações</th></tr></thead><tbody id="productTable"></tbody></table></div></div>
     </section>
 
     <section id="entradas" class="screen">
@@ -325,33 +325,98 @@ function seed(){if(state.products.length)return;state.products=[
 function nav(screen){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===screen));document.querySelectorAll('[data-screen]').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));let names={dashboard:'Visão geral',caixa:'Caixa / Venda',estoque:'Estoque',entradas:'Entradas',movimentos:'Movimentações',gestao:'Gestão Profissional'};document.getElementById('pageTitle').textContent=names[screen]||'';renderAll()}
 document.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>nav(b.dataset.screen));
 function status(p){if(p.stock<=0)return '<span class="badge out">Sem estoque</span>';if(p.stock<=p.min)return '<span class="badge low">Estoque baixo</span>';return '<span class="badge ok">Normal</span>'}
-function renderProducts(){let q=(document.getElementById('stockSearch').value||'').toLowerCase();let rows=state.products.filter(p=>!q||[p.name,p.code,p.category].join(' ').toLowerCase().includes(q)).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.code)}</td><td>${esc(p.category)}</td><td>${p.stock}</td><td>${money(p.cost)}</td><td>${money(p.price)}</td><td>${status(p)}</td><td><div class="row-actions"><button class="btn mini" onclick="editProduct('${p.id}')">Editar</button><button class="btn mini danger-soft" onclick="deleteProduct('${p.id}')">Excluir</button></div></td></tr>`).join('');document.getElementById('productTable').innerHTML=rows||'<tr><td colspan="8" class="empty">Nenhum produto encontrado.</td></tr>';let sel=document.getElementById('entryProduct');let old=sel.value;sel.innerHTML='<option value="">Selecione um produto</option>'+state.products.map(p=>`<option value="${p.id}">${esc(p.name)} — estoque ${p.stock}</option>`).join('');if(state.products.some(p=>p.id===old))sel.value=old;renderEntrySelected()}
-function renderEntrySelected(){let sel=document.getElementById('entryProduct');if(!sel)return;let p=state.products.find(x=>x.id===sel.value),box=document.getElementById('entrySelected');if(!box)return;if(!p){box.innerHTML='<div style="color:var(--muted)">Nenhum produto selecionado.<br>Escaneie ou escolha um produto abaixo.</div>';return}box.innerHTML=`<div class="name">${esc(p.name)}</div><div class="meta">Código: <b>${esc(p.code||'sem código')}</b> · ${esc(p.category||'sem categoria')}${p.brand?' · '+esc(p.brand):''}${p.package?' · '+esc(p.package):''}</div><div class="stock">Estoque atual: ${p.stock} unidade(s) · Custo atual: ${money(p.cost)}</div>`}
+function renderProducts(){let q=(document.getElementById('stockSearch').value||'').toLowerCase();let rows=state.products.filter(p=>!q||[p.name,p.code,p.category].join(' ').toLowerCase().includes(q)).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.code)}</td><td>${esc(p.category)}</td><td>${p.stock}</td><td>${money(p.cost)}</td><td>${money(p.price)}${p.referencePriceSource?`<div style="font-size:10px;color:var(--muted)">ref. online</div>`:''}</td><td>${status(p)}</td><td><div class="row-actions"><button class="btn mini" onclick="editProduct('${p.id}')">Editar</button><button class="btn mini danger-soft" onclick="deleteProduct('${p.id}')">Excluir</button></div></td></tr>`).join('');document.getElementById('productTable').innerHTML=rows||'<tr><td colspan="8" class="empty">Nenhum produto encontrado.</td></tr>';let sel=document.getElementById('entryProduct');let old=sel.value;sel.innerHTML='<option value="">Selecione um produto</option>'+state.products.map(p=>`<option value="${p.id}">${esc(p.name)} — estoque ${p.stock}</option>`).join('');if(state.products.some(p=>p.id===old))sel.value=old;renderEntrySelected()}
+function renderEntrySelected(){let sel=document.getElementById('entryProduct');if(!sel)return;let p=state.products.find(x=>x.id===sel.value),box=document.getElementById('entrySelected');if(!box)return;if(!p){box.innerHTML='<div style="color:var(--muted)">Nenhum produto selecionado.<br>Escaneie ou escolha um produto abaixo.</div>';return}box.innerHTML=`<div class="name">${esc(p.name)}</div><div class="meta">Código: <b>${esc(p.code||'sem código')}</b> · ${esc(p.category||'sem categoria')}${p.brand?' · '+esc(p.brand):''}${p.package?' · '+esc(p.package):''}</div><div class="stock">Estoque atual: ${p.stock} unidade(s) · Custo atual: ${money(p.cost)} · Venda: ${money(p.price)}</div>${p.referencePrice>0?`<div style="font-size:11px;color:var(--muted);margin-top:5px">Preço online de referência: ${money(p.referencePrice)}${p.referencePriceDate?' · '+esc(p.referencePriceDate):''}</div>`:''}`}
 function selectEntryProduct(p){if(!p)return;document.getElementById('entryProduct').value=p.id;document.getElementById('entryCode').value=p.code||'';document.getElementById('entryCost').value=p.cost||'';renderEntrySelected();setTimeout(()=>document.getElementById('entryQty').focus(),40)}
 async function lookupExternalProduct(code){
-  const urls=[`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=code,product_name,product_name_pt,brands,categories,quantity,image_front_url`];
-  for(const url of urls){
-    try{
-      const r=await fetch(url,{headers:{'Accept':'application/json'}}); if(!r.ok)continue;
-      const d=await r.json(); if(d.status===1&&d.product){
-        const x=d.product; const name=(x.product_name_pt||x.product_name||'').trim();
-        if(!name)continue;
-        return {name,brand:(x.brands||'').split(',')[0].trim(),category:(x.categories||'').split(',')[0].trim(),package:x.quantity||'',image:x.image_front_url||''};
+  let info=null, priceInfo=null;
+
+  // Dados do produto
+  try{
+    const url=`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=code,product_name,product_name_pt,brands,categories,quantity,image_front_url,labels,ingredients_text`;
+    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(r.ok){
+      const d=await r.json();
+      if(d.status===1&&d.product){
+        const x=d.product, name=(x.product_name_pt||x.product_name||'').trim();
+        if(name){
+          info={
+            name,
+            brand:(x.brands||'').split(',')[0].trim(),
+            category:(x.categories||'').split(',')[0].trim(),
+            package:x.quantity||'',
+            image:x.image_front_url||'',
+            labels:x.labels||'',
+            ingredients:x.ingredients_text||''
+          };
+        }
       }
-    }catch(e){}
-  }
-  return null;
+    }
+  }catch(e){}
+
+  // Preço de referência público. Pode variar por loja, cidade e data.
+  try{
+    const u=`https://prices.openfoodfacts.org/api/v1/prices?product_code=${encodeURIComponent(code)}&sort_by=-date&page_size=20`;
+    const r=await fetch(u,{headers:{'Accept':'application/json'}});
+    if(r.ok){
+      const d=await r.json();
+      const arr = Array.isArray(d.items) ? d.items : (Array.isArray(d.results) ? d.results : (Array.isArray(d) ? d : []));
+      const valid=arr.filter(x=>Number(x.price)>0);
+      if(valid.length){
+        const brl=valid.filter(x=>String(x.currency||'').toUpperCase()==='BRL');
+        const pool=brl.length?brl:valid;
+        const latest=pool[0];
+        priceInfo={
+          price:Number(latest.price)||0,
+          currency:(latest.currency||'').toUpperCase(),
+          date:latest.date||latest.created||'',
+          source:'Open Prices'
+        };
+      }
+    }
+  }catch(e){}
+
+  if(!info && !priceInfo) return null;
+  return Object.assign(info||{}, {referencePrice:priceInfo?.price||0, priceCurrency:priceInfo?.currency||'', priceDate:priceInfo?.date||'', priceSource:priceInfo?.source||''});
 }
 function setLookupStatus(html,show=true){let el=document.getElementById('entryLookupStatus');if(!el)return;el.style.display=show?'block':'none';el.innerHTML=html||''}
 async function smartEntryLookup(code){
   code=normalizeCode(code); if(!code)return toast('Digite ou escaneie um código');
-  let local=state.products.find(x=>normalizeCode(x.code)===code); if(local){selectEntryProduct(local);setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b>');toast('Produto encontrado');return}
+  let local=state.products.find(x=>normalizeCode(x.code)===code);
+  if(local){
+    selectEntryProduct(local);
+    setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b><br>🌐 Conferindo se existem dados ou preço mais recentes...');
+    try{
+      const info=await lookupExternalProduct(code);
+      if(info){
+        if(info.name && (!local.name || local.name==='Produto')) local.name=info.name;
+        if(info.brand && !local.brand) local.brand=info.brand;
+        if(info.category && !local.category) local.category=info.category;
+        if(info.package && !local.package) local.package=info.package;
+        if(info.image && !local.image) local.image=info.image;
+        if(info.labels && !local.labels) local.labels=info.labels;
+        if(info.ingredients && !local.ingredients) local.ingredients=info.ingredients;
+        if(info.referencePrice>0){
+          local.referencePrice=info.referencePrice;
+          local.referencePriceCurrency=info.priceCurrency||'BRL';
+          local.referencePriceDate=info.priceDate||'';
+          local.referencePriceSource=info.priceSource||'Open Prices';
+          if(!local.price || local.price<=0) local.price=info.referencePrice;
+        }
+        save(); renderAll(); selectEntryProduct(local);
+        setLookupStatus('✅ <b>'+esc(local.name)+'</b> atualizado automaticamente.'+(info.referencePrice>0?'<br>💰 Preço de referência encontrado: <b>'+money(info.referencePrice)+'</b> <small>(pode variar por loja/região)</small>':''));
+      }else{
+        setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b>');
+      }
+    }catch(e){}
+    toast('Produto encontrado'); return;
+  }
   if(lookupBusy)return; lookupBusy=true; setLookupStatus('🌐 Produto novo. Buscando nome, marca e dados automaticamente...');
   let info=await lookupExternalProduct(code); lookupBusy=false;
   if(info){
-    let obj={id:crypto.randomUUID(),name:info.name,code,category:info.category||'Não informada',brand:info.brand||'',package:info.package||'',image:info.image||'',min:5,stock:0,cost:0,price:0};
+    let obj={id:crypto.randomUUID(),name:info.name||('Produto '+code),code,category:info.category||'Não informada',brand:info.brand||'',package:info.package||'',image:info.image||'',labels:info.labels||'',ingredients:info.ingredients||'',min:5,stock:0,cost:0,price:info.referencePrice||0,referencePrice:info.referencePrice||0,referencePriceCurrency:info.priceCurrency||'',referencePriceDate:info.priceDate||'',referencePriceSource:info.priceSource||''};
     state.products.push(obj); save(); selectEntryProduct(obj);
-    setLookupStatus('✅ <b>'+esc(obj.name)+'</b>'+(obj.brand?' · '+esc(obj.brand):'')+(obj.package?' · '+esc(obj.package):'')+'<br>Cadastro criado automaticamente. Agora informe somente a quantidade que chegou. O custo pode ser informado se desejar.');
+    setLookupStatus('✅ <b>'+esc(obj.name)+'</b>'+(obj.brand?' · '+esc(obj.brand):'')+(obj.package?' · '+esc(obj.package):'')+(obj.price>0?'<br>💰 Preço de referência: <b>'+money(obj.price)+'</b> <small>(pode variar por loja/região)</small>':'')+'<br>Cadastro criado automaticamente. Agora informe a quantidade que chegou.');
     toast('Produto identificado automaticamente'); return;
   }
   pendingEntryCode=code; pendingEntryAfterSave=true; setLookupStatus('⚠️ Não encontrei esse código na base online. Complete o cadastro uma única vez; nas próximas entradas será automático.');
@@ -403,7 +468,48 @@ document.getElementById('saveProduct').onclick=()=>{let id=document.getElementBy
 document.getElementById('saveEntry').onclick=()=>{let id=document.getElementById('entryProduct').value,p=state.products.find(x=>x.id===id),qty=Number(document.getElementById('entryQty').value)||0,cost=Number(document.getElementById('entryCost').value);if(!p||qty<=0)return toast('Informe produto e quantidade');if(!Number.isNaN(cost)&&cost>0)p.cost=cost;p.stock+=qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:p.id,productName:p.name,qty,unit:p.cost,total:qty*p.cost,note:document.getElementById('entryNote').value.trim()});document.getElementById('entryQty').value=1;document.getElementById('entryCost').value=p.cost||'';document.getElementById('entryNote').value='';save();document.getElementById('entryProduct').value=p.id;renderEntrySelected();toast('Entrada registrada: +'+qty+' '+p.name)};
 document.getElementById('finishSale').onclick=()=>{if(!cart.length)return toast('Carrinho vazio');for(let c of cart){let p=state.products.find(x=>x.id===c.id);if(!p||p.stock<c.qty)return toast('Estoque insuficiente para '+c.name)}let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.max(0,Number(document.getElementById('discount').value)||0),total=Math.max(0,sub-disc),pay=document.getElementById('payment').value,saleId=crypto.randomUUID();for(let c of cart){let p=state.products.find(x=>x.id===c.id);p.stock-=c.qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'venda',saleId,productId:p.id,productName:p.name,qty:-c.qty,unit:c.price,total:c.price*c.qty,note:pay})}state.sales.push({id:saleId,date:nowISO(),items:cart.map(c=>({id:c.id,name:c.name,qty:c.qty,price:c.price})),subtotal:sub,discount:disc,total,payment:pay});cart=[];document.getElementById('discount').value=0;document.getElementById('received').value='';save();toast('Venda finalizada com sucesso')};
 document.getElementById('clearCart').onclick=()=>{cart=[];renderCart()};document.getElementById('scanSaleBtn').onclick=()=>openScanner('sale');document.getElementById('scanProductBtn').onclick=()=>openScanner('product');document.getElementById('scanEntryBtn').onclick=()=>openScanner('entry');document.getElementById('findEntryCodeBtn').onclick=findEntryByCode;document.getElementById('entryCode').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();findEntryByCode()}});document.getElementById('entryProduct').onchange=()=>{let p=state.products.find(x=>x.id===document.getElementById('entryProduct').value);if(p)selectEntryProduct(p);else renderEntrySelected()};document.getElementById('newEntryProductBtn').onclick=()=>{pendingEntryAfterSave=true;pendingEntryCode='';openProduct()};document.getElementById('clearEntryBtn').onclick=()=>{document.getElementById('entryCode').value='';document.getElementById('entryProduct').value='';document.getElementById('entryQty').value=1;document.getElementById('entryCost').value='';document.getElementById('entryNote').value='';renderEntrySelected()};document.getElementById('closeScanner').onclick=()=>stopCamera();document.getElementById('stopScannerBtn').onclick=()=>stopCamera();document.getElementById('switchCameraBtn').onclick=async()=>{scannerFacing=scannerFacing==='environment'?'user':'environment';await startCamera()};document.getElementById('torchBtn').onclick=async()=>{if(!scannerTrack)return;let caps=scannerTrack.getCapabilities?.()||{};if(!caps.torch)return;let cur=scannerTrack.getSettings?.().torch||false;try{await scannerTrack.applyConstraints({advanced:[{torch:!cur}]});document.getElementById('torchBtn').textContent=!cur?'🔦 Desligar lanterna':'🔦 Lanterna'}catch(e){toast('Lanterna não disponível')}};
-document.getElementById('addSearchBtn').onclick=searchSale;document.getElementById('saleSearch').addEventListener('keydown',e=>{if(e.key==='Enter')searchSale()});document.getElementById('discount').oninput=calcTotals;document.getElementById('received').oninput=calcTotals;document.getElementById('stockSearch').oninput=renderProducts;document.getElementById('stockSearchBtn').onclick=renderProducts;document.getElementById('moveFilter').onchange=renderMoves;document.getElementById('moveSearch').oninput=renderMoves;
+
+async function refreshAllProductsOnline(){
+  const btn=document.getElementById('refreshOnlineBtn');
+  if(!btn)return;
+  const candidates=state.products.filter(p=>p.code);
+  if(!candidates.length)return toast('Nenhum produto com código de barras');
+  btn.disabled=true;
+  const original=btn.textContent;
+  let updated=0, prices=0;
+  try{
+    for(let i=0;i<candidates.length;i++){
+      const p=candidates[i];
+      btn.textContent=`🌐 Atualizando ${i+1}/${candidates.length}`;
+      try{
+        const info=await lookupExternalProduct(normalizeCode(p.code));
+        if(!info)continue;
+        if(info.name && (!p.name || p.name==='Produto')) p.name=info.name;
+        if(info.brand) p.brand=info.brand;
+        if(info.category) p.category=info.category;
+        if(info.package) p.package=info.package;
+        if(info.image) p.image=info.image;
+        if(info.labels) p.labels=info.labels;
+        if(info.ingredients) p.ingredients=info.ingredients;
+        if(info.referencePrice>0){
+          p.referencePrice=info.referencePrice;
+          p.referencePriceCurrency=info.priceCurrency||'BRL';
+          p.referencePriceDate=info.priceDate||'';
+          p.referencePriceSource=info.priceSource||'Open Prices';
+          if(!p.price || p.price<=0) p.price=info.referencePrice;
+          prices++;
+        }
+        updated++;
+      }catch(e){}
+    }
+    save(); renderAll();
+    toast(`Atualização concluída: ${updated} produto(s), ${prices} preço(s) de referência`);
+  }finally{
+    btn.disabled=false; btn.textContent=original;
+  }
+}
+
+document.getElementById('addSearchBtn').onclick=searchSale;document.getElementById('saleSearch').addEventListener('keydown',e=>{if(e.key==='Enter')searchSale()});document.getElementById('discount').oninput=calcTotals;document.getElementById('received').oninput=calcTotals;document.getElementById('stockSearch').oninput=renderProducts;document.getElementById('stockSearchBtn').onclick=renderProducts;document.getElementById('refreshOnlineBtn').onclick=refreshAllProductsOnline;document.getElementById('moveFilter').onchange=renderMoves;document.getElementById('moveSearch').oninput=renderMoves;
 document.getElementById('exportBtn').onclick=()=>{let blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='backup-mercado-'+todayKey()+'.json';a.click();URL.revokeObjectURL(a.href)};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('service-worker.js').catch(()=>{});seed();let upgradedMoves=false;state.moves.forEach(m=>{if(!m.id){m.id=crypto.randomUUID();upgradedMoves=true}});if(upgradedMoves)localStorage.setItem(KEY,JSON.stringify(state));renderAll();
 </script>
