@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro</title>
+  <title>Mercado Caixa Pro V6 Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -80,18 +80,27 @@
       .scanner-actions{display:grid;grid-template-columns:1fr 1fr}.scanner-actions .btn:last-child{grid-column:1/-1}
       .searchbar{grid-template-columns:1fr}.searchbar .btn{width:100%}
     }
-  </style>
+  
+/* V6 PROFISSIONAL */
+.pro-tabs{display:flex;gap:7px;overflow-x:auto;padding:0 0 8px;scrollbar-width:none}.pro-tabs::-webkit-scrollbar{display:none}.pro-tabs .btn{width:auto;white-space:nowrap;margin:0}
+.propage{display:none}.propage.active{display:block}.pro-form4{grid-template-columns:repeat(4,minmax(0,1fr))}.pro-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.pro-item{display:grid;grid-template-columns:minmax(0,1.7fr) repeat(3,minmax(90px,.7fr)) auto;gap:9px;align-items:center;padding:10px;border:1px solid var(--border,#d7e2d9);border-radius:13px;background:rgba(255,255,255,.02);font-size:13px;min-width:0}.pro-item b{overflow:hidden;text-overflow:ellipsis}.pro-muted{font-size:11px;color:var(--muted)}.pro-badge{display:inline-flex;width:max-content;max-width:100%;padding:4px 8px;border-radius:999px;background:rgba(96,165,250,.14);font-size:11px}.pro-danger{background:rgba(239,68,68,.12)}.pro-warn{background:rgba(245,158,11,.14)}.pro-ok{background:rgba(34,197,94,.13)}.pro-actions{display:flex;gap:5px}.pro-actions .btn{padding:6px 8px!important;font-size:11px!important;width:auto!important;margin:0!important}.mobilebar{overflow-x:auto}.mobilebar button{min-width:64px;flex:1 0 64px}
+@media(max-width:850px){.pro-form4{grid-template-columns:1fr 1fr}.pro-item{grid-template-columns:minmax(0,1fr) auto}.pro-item .pro-hide-mobile{display:none}}
+@media(max-width:520px){.pro-form4{grid-template-columns:1fr}.pro-item{padding:8px;font-size:12px}.pro-tabs{margin-left:-2px;margin-right:-2px}}
+
+</style>
 </head>
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V5 Compacto Inteligente</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V6 Profissional Inteligente</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
       <button data-screen="estoque">📦 Estoque</button>
       <button data-screen="entradas">⬇️ Entradas</button>
       <button data-screen="movimentos">📋 Movimentações</button>
+      <button data-screen="gestao">🧠 Gestão Pro</button>
     </div>
   </aside>
   <main>
@@ -151,11 +160,66 @@
     <section id="movimentos" class="screen">
       <div class="panel" style="margin-top:0"><h3>Histórico completo</h3><div class="formgrid" style="margin-bottom:10px"><div class="field"><label>Tipo</label><select id="moveFilter"><option value="">Todos</option><option value="entrada">Entradas</option><option value="venda">Vendas</option><option value="ajuste">Ajustes</option></select></div><div class="field"><label>Produto</label><input id="moveSearch" placeholder="Buscar produto"/></div></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Produto</th><th>Qtd.</th><th>Unitário</th><th>Total</th><th>Pagamento / Obs.</th></tr></thead><tbody id="movesTable"></tbody></table></div></div>
     </section>
+
+    <section id="gestao" class="screen">
+      <div class="pro-tabs">
+        <button class="btn primary protab active" data-protab="resumo">📊 Resumo</button>
+        <button class="btn ghost protab" data-protab="validade">📅 Validade / Lotes</button>
+        <button class="btn ghost protab" data-protab="fornecedores">🚚 Fornecedores</button>
+        <button class="btn ghost protab" data-protab="fechamento">💰 Fechamento</button>
+        <button class="btn ghost protab" data-protab="reposicao">🛒 Reposição</button>
+      </div>
+
+      <div id="pro-resumo" class="propage active">
+        <div class="grid4">
+          <div class="stat"><small>Custo do estoque</small><strong id="proStockCost">R$ 0,00</strong></div>
+          <div class="stat"><small>Venda potencial</small><strong id="proStockSale">R$ 0,00</strong></div>
+          <div class="stat"><small>Lucro bruto potencial</small><strong id="proPotentialProfit">R$ 0,00</strong></div>
+          <div class="stat"><small>Itens para repor</small><strong id="proLowCount">0</strong></div>
+        </div>
+        <div class="panel"><h3>Margem por produto</h3><div id="proMargins" class="pro-list"></div></div>
+      </div>
+
+      <div id="pro-validade" class="propage">
+        <div class="panel"><h3>Registrar lote e validade</h3>
+          <div class="formgrid pro-form4">
+            <div class="field"><label>Produto</label><select id="lotProduct"></select></div>
+            <div class="field"><label>Lote</label><input id="lotNumber" placeholder="Ex.: L2408"/></div>
+            <div class="field"><label>Validade</label><input id="lotExpiry" type="date"/></div>
+            <div class="field"><label>Quantidade</label><input id="lotQty" type="number" min="1" value="1"/></div>
+          </div>
+          <button class="btn primary" id="saveLotBtn" style="margin-top:10px">Salvar lote</button>
+        </div>
+        <div class="panel"><h3>Produtos por validade</h3><div id="lotList" class="pro-list"></div></div>
+      </div>
+
+      <div id="pro-fornecedores" class="propage">
+        <div class="panel"><h3>Novo fornecedor</h3>
+          <div class="formgrid pro-form4">
+            <div class="field"><label>Nome / empresa</label><input id="supplierName"/></div>
+            <div class="field"><label>Telefone</label><input id="supplierPhone"/></div>
+            <div class="field"><label>CNPJ / CPF</label><input id="supplierDoc"/></div>
+            <div class="field"><label>Observação</label><input id="supplierNote"/></div>
+          </div>
+          <button class="btn primary" id="saveSupplierBtn" style="margin-top:10px">Adicionar fornecedor</button>
+        </div>
+        <div class="panel"><h3>Fornecedores cadastrados</h3><div id="supplierList" class="pro-list"></div></div>
+      </div>
+
+      <div id="pro-fechamento" class="propage">
+        <div class="panel"><h3>Controle de caixa por operador</h3><div id="cashControl"></div></div>
+        <div class="panel"><h3>Últimos fechamentos</h3><div id="cashHistory" class="pro-list"></div></div>
+      </div>
+
+      <div id="pro-reposicao" class="propage">
+        <div class="panel"><h3>Lista automática de reposição</h3><p class="helper">Mostra produtos que chegaram ao estoque mínimo ou ficaram abaixo dele.</p><div id="replenishmentList" class="pro-list"></div></div>
+      </div>
+    </section>
   </main>
 </div>
 
 <div class="mobilebar">
-  <button class="active" data-screen="dashboard">📊<br>Geral</button><button data-screen="caixa">💵<br>Caixa</button><button data-screen="estoque">📦<br>Estoque</button><button data-screen="entradas">⬇️<br>Entrada</button><button data-screen="movimentos">📋<br>Histórico</button>
+  <button class="active" data-screen="dashboard">📊<br>Geral</button><button data-screen="caixa">💵<br>Caixa</button><button data-screen="estoque">📦<br>Estoque</button><button data-screen="entradas">⬇️<br>Entrada</button><button data-screen="movimentos">📋<br>Histórico</button><button data-screen="gestao">🧠<br>Gestão</button>
 </div>
 
 <div class="modal" id="productModal"><div class="modalbox"><div class="modalhead"><h3 id="modalTitle">Novo produto</h3><button id="closeModal">✕</button></div><input type="hidden" id="productId"><div class="formgrid" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="field"><label>Nome</label><input id="pName"/></div><div class="field"><label>Código / código de barras</label><div style="display:grid;grid-template-columns:1fr auto;gap:6px"><input id="pCode"/><button class="btn blue" id="scanProductBtn" type="button">📷</button></div></div><div class="field"><label>Categoria</label><input id="pCategory"/></div><div class="field"><label>Marca</label><input id="pBrand"/></div><div class="field"><label>Embalagem / quantidade</label><input id="pPackage" placeholder="Ex.: 1 L, 500 g"/></div><div class="field"><label>Estoque mínimo</label><input id="pMin" type="number" min="0" value="5"/></div><div class="field"><label>Estoque inicial</label><input id="pStock" type="number" min="0" value="0"/></div><div class="field"><label>Custo unitário (R$)</label><input id="pCost" type="number" min="0" step="0.01"/></div><div class="field"><label>Preço de venda (R$)</label><input id="pPrice" type="number" min="0" step="0.01"/></div></div><button class="btn primary" id="saveProduct" style="width:100%;margin-top:14px">Salvar produto</button></div></div>
@@ -168,6 +232,7 @@ const money=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 const nowISO=()=>new Date().toISOString();
 const todayKey=()=>new Date().toISOString().slice(0,10);
 let state=JSON.parse(localStorage.getItem(DBKEY)||'null')||{products:[],moves:[],sales:[]};
+state.products=state.products||[];state.moves=state.moves||[];state.sales=state.sales||[];state.suppliers=state.suppliers||[];state.lots=state.lots||[];state.cashSessions=state.cashSessions||[];
 let cart=[];
 const save=()=>{localStorage.setItem(DBKEY,JSON.stringify(state));renderAll()};
 const toast=t=>{let e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)};
@@ -257,7 +322,7 @@ function seed(){if(state.products.length)return;state.products=[
 {id:crypto.randomUUID(),name:'Leite 1L',code:'789100000003',category:'Laticínios',stock:36,min:10,cost:3.7,price:5.49},
 {id:crypto.randomUUID(),name:'Refrigerante 2L',code:'789100000004',category:'Bebidas',stock:12,min:5,cost:6.8,price:9.99}
 ];save()}
-function nav(screen){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===screen));document.querySelectorAll('[data-screen]').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));let names={dashboard:'Visão geral',caixa:'Caixa / Venda',estoque:'Estoque',entradas:'Entradas',movimentos:'Movimentações'};document.getElementById('pageTitle').textContent=names[screen]||'';renderAll()}
+function nav(screen){document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===screen));document.querySelectorAll('[data-screen]').forEach(x=>x.classList.toggle('active',x.dataset.screen===screen));let names={dashboard:'Visão geral',caixa:'Caixa / Venda',estoque:'Estoque',entradas:'Entradas',movimentos:'Movimentações',gestao:'Gestão Profissional'};document.getElementById('pageTitle').textContent=names[screen]||'';renderAll()}
 document.querySelectorAll('[data-screen]').forEach(b=>b.onclick=()=>nav(b.dataset.screen));
 function status(p){if(p.stock<=0)return '<span class="badge out">Sem estoque</span>';if(p.stock<=p.min)return '<span class="badge low">Estoque baixo</span>';return '<span class="badge ok">Normal</span>'}
 function renderProducts(){let q=(document.getElementById('stockSearch').value||'').toLowerCase();let rows=state.products.filter(p=>!q||[p.name,p.code,p.category].join(' ').toLowerCase().includes(q)).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.code)}</td><td>${esc(p.category)}</td><td>${p.stock}</td><td>${money(p.cost)}</td><td>${money(p.price)}</td><td>${status(p)}</td><td><div class="row-actions"><button class="btn mini" onclick="editProduct('${p.id}')">Editar</button><button class="btn mini danger-soft" onclick="deleteProduct('${p.id}')">Excluir</button></div></td></tr>`).join('');document.getElementById('productTable').innerHTML=rows||'<tr><td colspan="8" class="empty">Nenhum produto encontrado.</td></tr>';let sel=document.getElementById('entryProduct');let old=sel.value;sel.innerHTML='<option value="">Selecione um produto</option>'+state.products.map(p=>`<option value="${p.id}">${esc(p.name)} — estoque ${p.stock}</option>`).join('');if(state.products.some(p=>p.id===old))sel.value=old;renderEntrySelected()}
@@ -302,11 +367,37 @@ window.cartQty=(i,d)=>{let p=state.products.find(x=>x.id===cart[i].id);cart[i].q
 function addToCart(p){if(p.stock<=0)return toast('Produto sem estoque');let c=cart.find(x=>x.id===p.id);if(c){if(c.qty<p.stock)c.qty++;else return toast('Quantidade máxima em estoque')}else cart.push({...p,qty:1});renderCart();document.getElementById('saleSearch').value='';document.getElementById('searchResults').innerHTML=''}
 function searchSale(){let q=document.getElementById('saleSearch').value.trim().toLowerCase();if(!q)return;let exact=state.products.find(p=>p.code.toLowerCase()===q);if(exact)return addToCart(exact);let arr=state.products.filter(p=>[p.name,p.code,p.category].join(' ').toLowerCase().includes(q)).slice(0,7);document.getElementById('searchResults').innerHTML=arr.map(p=>`<button class="btn ghost" style="width:100%;text-align:left;margin:3px 0" onclick="addById('${p.id}')">${esc(p.name)} · ${money(p.price)} · estoque ${p.stock}</button>`).join('')||'<div class="empty">Produto não encontrado.</div>'}
 window.addById=id=>addToCart(state.products.find(p=>p.id===id));
-function renderAll(){document.getElementById('dateText').textContent=new Date().toLocaleString('pt-BR');renderProducts();renderDashboard();renderMoves();renderEntries();renderCart()}
+function renderAll(){document.getElementById('dateText').textContent=new Date().toLocaleString('pt-BR');renderProducts();renderDashboard();renderMoves();renderEntries();renderCart();renderPro()}
 function openProduct(p){document.getElementById('productModal').classList.add('open');document.getElementById('modalTitle').textContent=p?'Editar produto':'Novo produto';document.getElementById('productId').value=p?.id||'';document.getElementById('pName').value=p?.name||'';document.getElementById('pCode').value=p?.code||'';document.getElementById('pCategory').value=p?.category||'';document.getElementById('pBrand').value=p?.brand||'';document.getElementById('pPackage').value=p?.package||'';document.getElementById('pMin').value=p?.min??5;document.getElementById('pStock').value=p?.stock??0;document.getElementById('pCost').value=p?.cost??'';document.getElementById('pPrice').value=p?.price??''}
 window.editProduct=id=>openProduct(state.products.find(p=>p.id===id));
 window.deleteProduct=id=>{let p=state.products.find(x=>x.id===id);if(!p)return;if(!confirm(`Excluir ${p.name} do estoque? O histórico antigo de vendas e movimentações será mantido.`))return;state.products=state.products.filter(x=>x.id!==id);cart=cart.filter(x=>x.id!==id);if(document.getElementById('entryProduct').value===id){document.getElementById('entryProduct').value='';document.getElementById('entryCode').value=''}save();toast('Produto excluído do estoque')};
 window.deleteEntry=id=>{let idx=state.moves.findIndex(m=>m.id===id&&m.type==='entrada');if(idx<0)return;let m=state.moves[idx],p=state.products.find(x=>x.id===m.productId),qty=Math.abs(Number(m.qty)||0);if(!confirm(`Excluir esta entrada de ${m.productName} (+${qty}) e desfazer a quantidade no estoque?`))return;if(p&&p.stock<qty)return toast('Não é possível desfazer: o estoque atual é menor que esta entrada. Faça um ajuste de estoque.');if(p)p.stock-=qty;state.moves.splice(idx,1);save();toast('Entrada excluída e estoque corrigido')};
+
+// ===== V6 PROFISSIONAL =====
+function proUid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function renderPro(){
+  if(!document.getElementById('proStockCost'))return;
+  let cost=state.products.reduce((a,p)=>a+p.stock*p.cost,0),sale=state.products.reduce((a,p)=>a+p.stock*p.price,0),low=state.products.filter(p=>p.stock<=p.min);
+  proStockCost.textContent=money(cost);proStockSale.textContent=money(sale);proPotentialProfit.textContent=money(sale-cost);proLowCount.textContent=low.length;
+  proMargins.innerHTML=state.products.slice().sort((a,b)=>((b.price-b.cost)-(a.price-a.cost))).map(p=>{let margin=p.price>0?((p.price-p.cost)/p.price*100):0;return `<div class="pro-item"><div><b>${esc(p.name)}</b><div class="pro-muted">${esc(p.code||'Sem código')} · estoque ${p.stock}</div></div><div class="pro-hide-mobile">Custo<br><b>${money(p.cost)}</b></div><div class="pro-hide-mobile">Venda<br><b>${money(p.price)}</b></div><div>Margem<br><b>${margin.toFixed(1)}%</b></div><span class="pro-badge">${money(p.price-p.cost)}/un.</span></div>`}).join('')||'<div class="empty">Cadastre produtos para visualizar a margem.</div>';
+  lotProduct.innerHTML='<option value="">Selecione</option>'+state.products.map(p=>`<option value="${p.id}">${esc(p.name)} · ${esc(p.code)}</option>`).join('');
+  let today=new Date();today.setHours(0,0,0,0);
+  lotList.innerHTML=state.lots.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999')).map(l=>{let d=l.expiry?Math.ceil((new Date(l.expiry+'T12:00:00')-today)/86400000):99999,status=d<0?'VENCIDO':d<=7?'Vence em '+d+' dia(s)':d<=30?'Vence em '+d+' dias':'OK',cls=d<0?'pro-danger':d<=30?'pro-warn':'pro-ok';return `<div class="pro-item"><div><b>${esc(l.productName)}</b><div class="pro-muted">Lote ${esc(l.lot||'—')} · ${esc(l.code||'')}</div></div><div>${l.expiry?new Date(l.expiry+'T12:00:00').toLocaleDateString('pt-BR'):'Sem validade'}</div><div class="pro-hide-mobile">${l.qty} un.</div><div><span class="pro-badge ${cls}">${status}</span></div><div class="pro-actions"><button class="btn red" onclick="deleteLot('${l.id}')">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum lote registrado.</div>';
+  supplierList.innerHTML=state.suppliers.map(x=>`<div class="pro-item"><div><b>${esc(x.name)}</b><div class="pro-muted">${esc(x.note||'')}</div></div><div>${esc(x.phone||'—')}</div><div class="pro-hide-mobile">${esc(x.doc||'—')}</div><div class="pro-hide-mobile">${new Date(x.created).toLocaleDateString('pt-BR')}</div><div class="pro-actions"><button class="btn red" onclick="deleteSupplier('${x.id}')">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum fornecedor cadastrado.</div>';
+  let open=state.cashSessions.find(x=>!x.closedAt);
+  cashControl.innerHTML=open?`<div class="grid4"><div class="stat"><small>Operador</small><strong style="font-size:16px">${esc(open.operator)}</strong></div><div class="stat"><small>Fundo inicial</small><strong>${money(open.opening)}</strong></div><div class="stat"><small>Aberto em</small><strong style="font-size:13px">${new Date(open.openedAt).toLocaleString('pt-BR')}</strong></div><div class="stat"><small>Status</small><strong style="font-size:16px">ABERTO</strong></div></div><div class="formgrid" style="margin-top:10px"><div class="field"><label>Dinheiro contado</label><input id="cashCounted" type="number" min="0" step="0.01"/></div><div class="field"><label>Observação</label><input id="cashClosingNote"/></div></div><button class="btn red" style="margin-top:10px" onclick="closeCashSession()">Fechar caixa</button>`:`<div class="formgrid"><div class="field"><label>Operador</label><input id="cashOperator" placeholder="Nome do operador"/></div><div class="field"><label>Fundo inicial (R$)</label><input id="cashOpening" type="number" min="0" step="0.01" value="0"/></div></div><button class="btn primary" style="margin-top:10px" onclick="openCashSession()">Abrir caixa</button>`;
+  cashHistory.innerHTML=state.cashSessions.filter(x=>x.closedAt).slice().reverse().slice(0,20).map(x=>`<div class="pro-item"><div><b>${esc(x.operator)}</b><div class="pro-muted">${new Date(x.openedAt).toLocaleString('pt-BR')}</div></div><div>Inicial<br><b>${money(x.opening)}</b></div><div>Contado<br><b>${money(x.counted)}</b></div><div class="pro-hide-mobile">Fechado<br>${new Date(x.closedAt).toLocaleString('pt-BR')}</div><span class="pro-badge pro-ok">Fechado</span></div>`).join('')||'<div class="empty">Nenhum fechamento realizado.</div>';
+  replenishmentList.innerHTML=low.map(p=>{let suggested=Math.max((p.min*2)-p.stock,1);return `<div class="pro-item"><div><b>${esc(p.name)}</b><div class="pro-muted">${esc(p.code)} · ${esc(p.category||'')}</div></div><div>Atual<br><b>${p.stock}</b></div><div>Mínimo<br><b>${p.min}</b></div><div>Sugestão<br><b>${suggested} un.</b></div><span class="pro-badge pro-warn">REPOR</span></div>`}).join('')||'<div class="empty">Estoque em dia. Nenhum item abaixo do mínimo.</div>';
+}
+function switchProTab(tab){document.querySelectorAll('.propage').forEach(x=>x.classList.toggle('active',x.id==='pro-'+tab));document.querySelectorAll('.protab').forEach(x=>{let on=x.dataset.protab===tab;x.classList.toggle('active',on);x.classList.toggle('primary',on);x.classList.toggle('ghost',!on)})}
+window.deleteLot=id=>{if(confirm('Excluir este lote/validade?')){state.lots=state.lots.filter(x=>x.id!==id);save()}};
+window.deleteSupplier=id=>{if(confirm('Excluir este fornecedor?')){state.suppliers=state.suppliers.filter(x=>x.id!==id);save()}};
+window.openCashSession=()=>{let op=document.getElementById('cashOperator')?.value.trim();if(!op)return toast('Informe o operador');state.cashSessions.push({id:proUid(),operator:op,opening:Number(document.getElementById('cashOpening').value)||0,openedAt:nowISO(),closedAt:null});save();toast('Caixa aberto')};
+window.closeCashSession=()=>{let x=state.cashSessions.find(x=>!x.closedAt);if(!x)return;x.counted=Number(document.getElementById('cashCounted').value)||0;x.note=document.getElementById('cashClosingNote').value.trim();x.closedAt=nowISO();save();toast('Caixa fechado')};
+document.querySelectorAll('.protab').forEach(b=>b.onclick=()=>switchProTab(b.dataset.protab));
+document.getElementById('saveLotBtn').onclick=()=>{let p=state.products.find(x=>x.id===lotProduct.value),qty=Number(lotQty.value)||0;if(!p||qty<=0)return toast('Selecione o produto e informe a quantidade');state.lots.push({id:proUid(),productId:p.id,productName:p.name,code:p.code,lot:lotNumber.value.trim(),expiry:lotExpiry.value,qty,created:nowISO()});lotNumber.value='';lotExpiry.value='';lotQty.value=1;save();toast('Lote salvo')};
+document.getElementById('saveSupplierBtn').onclick=()=>{let name=supplierName.value.trim();if(!name)return toast('Informe o fornecedor');state.suppliers.push({id:proUid(),name,phone:supplierPhone.value.trim(),doc:supplierDoc.value.trim(),note:supplierNote.value.trim(),created:nowISO()});supplierName.value=supplierPhone.value=supplierDoc.value=supplierNote.value='';save();toast('Fornecedor salvo')};
+
 document.getElementById('newProductBtn').onclick=()=>openProduct();document.getElementById('closeModal').onclick=()=>document.getElementById('productModal').classList.remove('open');
 document.getElementById('saveProduct').onclick=()=>{let id=document.getElementById('productId').value;let obj={id:id||crypto.randomUUID(),name:document.getElementById('pName').value.trim(),code:document.getElementById('pCode').value.trim(),category:document.getElementById('pCategory').value.trim(),brand:document.getElementById('pBrand').value.trim(),package:document.getElementById('pPackage').value.trim(),min:Number(document.getElementById('pMin').value)||0,stock:Number(document.getElementById('pStock').value)||0,cost:Number(document.getElementById('pCost').value)||0,price:Number(document.getElementById('pPrice').value)||0};if(!obj.name)return toast('Informe o nome do produto');if(obj.code){let dup=state.products.find(p=>p.id!==id&&normalizeCode(p.code)===normalizeCode(obj.code));if(dup)return toast('Este código já pertence a '+dup.name)}let old=state.products.find(p=>p.id===id);if(old){let diff=obj.stock-old.stock;if(diff!==0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'ajuste',productId:obj.id,productName:obj.name,qty:diff,unit:obj.cost,total:diff*obj.cost,note:'Ajuste manual de estoque'});Object.assign(old,obj)}else{state.products.push(obj);if(obj.stock>0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:obj.id,productName:obj.name,qty:obj.stock,unit:obj.cost,total:obj.stock*obj.cost,note:'Estoque inicial'})}document.getElementById('productModal').classList.remove('open');let savedId=obj.id;save();if(pendingEntryAfterSave){pendingEntryAfterSave=false;pendingEntryCode='';nav('entradas');let saved=state.products.find(p=>p.id===savedId);if(saved)selectEntryProduct(saved)}toast('Produto salvo')};
 document.getElementById('saveEntry').onclick=()=>{let id=document.getElementById('entryProduct').value,p=state.products.find(x=>x.id===id),qty=Number(document.getElementById('entryQty').value)||0,cost=Number(document.getElementById('entryCost').value);if(!p||qty<=0)return toast('Informe produto e quantidade');if(!Number.isNaN(cost)&&cost>0)p.cost=cost;p.stock+=qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:p.id,productName:p.name,qty,unit:p.cost,total:qty*p.cost,note:document.getElementById('entryNote').value.trim()});document.getElementById('entryQty').value=1;document.getElementById('entryCost').value=p.cost||'';document.getElementById('entryNote').value='';save();document.getElementById('entryProduct').value=p.id;renderEntrySelected();toast('Entrada registrada: +'+qty+' '+p.name)};
