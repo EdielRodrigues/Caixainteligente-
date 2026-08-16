@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V8 Interface Profissional</title>
+  <title>Mercado Caixa Pro V9 Interface Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -162,7 +162,7 @@ main{width:100%}
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V8 Interface Profissional</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V9 Scanner Contínuo + Gerente</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -292,7 +292,7 @@ main{width:100%}
 </div>
 
 <div class="modal" id="productModal"><div class="modalbox"><div class="modalhead"><h3 id="modalTitle">Novo produto</h3><button id="closeModal">✕</button></div><input type="hidden" id="productId"><div class="formgrid" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="field"><label>Nome</label><input id="pName"/></div><div class="field"><label>Código / código de barras</label><div style="display:grid;grid-template-columns:1fr auto;gap:6px"><input id="pCode"/><button class="btn blue" id="scanProductBtn" type="button">📷</button></div></div><div class="field"><label>Categoria</label><input id="pCategory"/></div><div class="field"><label>Marca</label><input id="pBrand"/></div><div class="field"><label>Embalagem / quantidade</label><input id="pPackage" placeholder="Ex.: 1 L, 500 g"/></div><div class="field"><label>Estoque mínimo</label><input id="pMin" type="number" min="0" value="5"/></div><div class="field"><label>Estoque inicial</label><input id="pStock" type="number" min="0" value="0"/></div><div class="field"><label>Custo unitário (R$)</label><input id="pCost" type="number" min="0" step="0.01"/></div><div class="field"><label>Preço de venda (R$)</label><input id="pPrice" type="number" min="0" step="0.01"/></div></div><button class="btn primary" id="saveProduct" style="width:100%;margin-top:14px">Salvar produto</button></div></div>
-<div class="modal" id="scannerModal"><div class="modalbox scannerbox"><div class="modalhead"><div><h3 style="margin:0">📷 Leitor de código</h3><small style="color:var(--muted)">Aponte a câmera para o código de barras ou QR Code</small></div><button id="closeScanner">✕</button></div><div class="camera-frame"><video id="scannerVideo" autoplay playsinline muted></video><div class="scan-target"></div><div class="scan-line"></div></div><div class="scanner-status" id="scannerStatus">Preparando câmera...</div><div class="scanner-actions"><button class="btn" id="switchCameraBtn">🔄 Trocar câmera</button><button class="btn amber" id="torchBtn" style="display:none">🔦 Lanterna</button><button class="btn red" id="stopScannerBtn">Parar leitura</button></div></div></div>
+<div class="modal" id="scannerModal"><div class="modalbox scannerbox"><div class="modalhead"><div><h3 style="margin:0">📷 Leitor de código</h3><small style="color:var(--muted)">Aponte a câmera para o código de barras ou QR Code</small></div><button id="closeScanner">✕</button></div><div class="camera-frame"><video id="scannerVideo" autoplay playsinline muted></video><div class="scan-target"></div><div class="scan-line"></div></div><div class="scanner-status" id="scannerStatus">Preparando câmera...</div><div class="scanner-actions"><button class="btn" id="switchCameraBtn">🔄 Trocar câmera</button><button class="btn amber" id="torchBtn" style="display:none">🔦 Lanterna</button><button class="btn red" id="stopScannerBtn">✕ Fechar câmera</button></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -302,12 +302,13 @@ const nowISO=()=>new Date().toISOString();
 const todayKey=()=>new Date().toISOString().slice(0,10);
 let state=JSON.parse(localStorage.getItem(DBKEY)||'null')||{products:[],moves:[],sales:[]};
 state.products=state.products||[];state.moves=state.moves||[];state.sales=state.sales||[];state.suppliers=state.suppliers||[];state.lots=state.lots||[];state.cashSessions=state.cashSessions||[];
+state.managerSecurity=state.managerSecurity||{pinHash:'',failedAttempts:0,lockUntil:0,lastChangedAt:null};
 let cart=[];
 const save=()=>{localStorage.setItem(DBKEY,JSON.stringify(state));renderAll()};
 const toast=t=>{let e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)};
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-let scannerStream=null, scannerTimer=null, scannerMode='sale', scannerFacing='environment', lastScan='', lastScanAt=0, scannerTrack=null;
+let scannerStream=null, scannerTimer=null, scannerMode='sale', scannerFacing='environment', lastScan='', lastScanAt=0, scannerTrack=null, scannedSessionCodes=new Set(), scanProcessing=false;
 let pendingEntryCode='', pendingEntryAfterSave=false, lookupBusy=false;
 const SCAN_FORMATS=['ean_13','ean_8','upc_a','upc_e','code_128','code_39','codabar','itf','qr_code'];
 function normalizeCode(v){return String(v||'').trim().replace(/\s+/g,'')}
@@ -320,7 +321,7 @@ async function makeDetector(){
   }catch(e){try{return new BarcodeDetector()}catch(_){return null}}
 }
 async function openScanner(mode){
-  scannerMode=mode; lastScan='';
+  scannerMode=mode; lastScan=''; lastScanAt=0; scannedSessionCodes=new Set(); scanProcessing=false;
   document.getElementById('scannerModal').classList.add('open');
   document.getElementById('scannerStatus').textContent='Solicitando acesso à câmera...';
   await startCamera();
@@ -343,16 +344,26 @@ async function startCamera(){
     const tick=async()=>{
       if(!scannerStream)return;
       try{
-        if(video.readyState>=2){
+        if(video.readyState>=2 && !scanProcessing){
           let codes=await detector.detect(video);
           if(codes?.length){
-            let raw=normalizeCode(codes[0].rawValue);
-            let now=Date.now();
-            if(raw && (raw!==lastScan || now-lastScanAt>1800)){lastScan=raw;lastScanAt=now;handleScannedCode(raw);return}
+            let raw=normalizeCode(codes[0].rawValue), now=Date.now();
+            if(raw){
+              if(scannedSessionCodes.has(raw)){
+                if(raw!==lastScan || now-lastScanAt>1200){
+                  lastScan=raw;lastScanAt=now;
+                  document.getElementById('scannerStatus').innerHTML='🔒 Código <b>'+esc(raw)+'</b> já lido nesta sessão. Leia outro produto ou feche e abra a câmera para liberar novamente.';
+                  if(navigator.vibrate)navigator.vibrate([35,35,35]);
+                }
+              }else{
+                scannedSessionCodes.add(raw);lastScan=raw;lastScanAt=now;scanProcessing=true;
+                try{await Promise.resolve(handleScannedCode(raw))}finally{setTimeout(()=>scanProcessing=false,450)}
+              }
+            }
           }
         }
       }catch(e){}
-      scannerTimer=requestAnimationFrame(tick);
+      if(scannerStream)scannerTimer=requestAnimationFrame(tick);
     };
     tick();
   }catch(e){
@@ -363,27 +374,35 @@ function stopCamera(close=true){
   if(scannerTimer)cancelAnimationFrame(scannerTimer); scannerTimer=null;
   if(scannerStream)scannerStream.getTracks().forEach(t=>t.stop()); scannerStream=null; scannerTrack=null;
   let v=document.getElementById('scannerVideo'); if(v)v.srcObject=null;
-  if(close)document.getElementById('scannerModal').classList.remove('open');
+  if(close){document.getElementById('scannerModal').classList.remove('open');scannedSessionCodes=new Set();scanProcessing=false;}
 }
-function handleScannedCode(code){
+async function handleScannedCode(code){
   if(navigator.vibrate)navigator.vibrate(80);
-  document.getElementById('scannerStatus').innerHTML='Código lido: <b>'+esc(code)+'</b>';
+  const statusEl=document.getElementById('scannerStatus');
+  statusEl.innerHTML='✅ Código lido: <b>'+esc(code)+'</b><br><small>A câmera continua aberta. Este código ficou bloqueado nesta sessão.</small>';
   if(scannerMode==='product'){
-    document.getElementById('pCode').value=code; stopCamera(); lookupExternalProduct(code).then(info=>{if(info){document.getElementById('pName').value=info.name||'';document.getElementById('pCategory').value=info.category||'';document.getElementById('pBrand').value=info.brand||'';document.getElementById('pPackage').value=info.package||'';toast('Dados do produto preenchidos automaticamente')}else toast('Código preenchido no cadastro')}); return;
+    document.getElementById('pCode').value=code;
+    try{
+      const info=await lookupExternalProduct(code);
+      if(info){
+        pName.value=info.name||'';pCategory.value=info.category||'';pBrand.value=info.brand||'';pPackage.value=info.package||'';
+        if(info.referencePrice>0 && !Number(pPrice.value||0))pPrice.value=info.referencePrice;
+        toast('Dados preenchidos automaticamente');
+      }
+    }catch(e){}
+    return;
   }
   let p=state.products.find(x=>normalizeCode(x.code)===code);
   if(scannerMode==='entry'){
-    stopCamera(); document.getElementById('entryCode').value=code;
-    if(p){selectEntryProduct(p);toast('Produto encontrado: '+p.name);return}
-    setTimeout(()=>smartEntryLookup(code),80);return;
+    entryCode.value=code;
+    if(p){selectEntryProduct(p);toast('Produto encontrado: '+p.name);statusEl.innerHTML='✅ <b>'+esc(p.name)+'</b> selecionado para entrada.<br><small>A câmera continua aberta e este código ficou bloqueado.</small>';return}
+    await smartEntryLookup(code);
+    statusEl.innerHTML='✅ Consulta concluída para <b>'+esc(code)+'</b>.<br><small>A câmera continua aberta. Leia outro código ou feche quando terminar.</small>';
+    return;
   }
-  if(p){stopCamera(); addToCart(p); toast('Produto lido: '+p.name); return}
-  stopCamera();
-  document.getElementById('saleSearch').value=code;
-  setTimeout(()=>{
-    if(confirm('Código '+code+' ainda não está cadastrado. Deseja cadastrar este produto agora?')){openProduct();document.getElementById('pCode').value=code;}
-    else searchSale();
-  },80);
+  if(p){addToCart(p);toast('Produto lido: '+p.name);statusEl.innerHTML='✅ <b>'+esc(p.name)+'</b> adicionado ao carrinho.<br><small>Este mesmo código não será lido novamente nesta sessão.</small>';return}
+  saleSearch.value=code;toast('Código não cadastrado');
+  statusEl.innerHTML='⚠️ Código <b>'+esc(code)+'</b> não cadastrado.<br><small>A câmera continua aberta. Você pode continuar lendo outros produtos.</small>';
 }
 function seed(){if(state.products.length)return;state.products=[
 {id:crypto.randomUUID(),name:'Arroz 5kg',code:'789100000001',category:'Mercearia',stock:18,min:5,cost:21.5,price:29.9},
@@ -509,6 +528,40 @@ window.deleteEntry=id=>{let idx=state.moves.findIndex(m=>m.id===id&&m.type==='en
 
 // ===== V6 PROFISSIONAL =====
 function proUid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+async function managerHash(value){
+  const text=String(value||'');
+  if(window.crypto?.subtle){
+    const data=new TextEncoder().encode(text),digest=await crypto.subtle.digest('SHA-256',data);
+    return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+  let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}
+  return 'fallback-'+(h>>>0).toString(16);
+}
+async function setManagerPin(){
+  const sec=state.managerSecurity;
+  if(sec.pinHash){
+    const current=prompt('Digite o PIN atual do gerente para trocar:');if(current===null)return;
+    if(await managerHash(current)!==sec.pinHash){toast('PIN atual incorreto');return}
+  }
+  const pin=prompt('Crie o PIN do gerente (4 a 8 números):');if(pin===null)return;
+  if(!/^\d{4,8}$/.test(pin)){toast('Use de 4 a 8 números');return}
+  const c=prompt('Repita o novo PIN:');if(c!==pin){toast('Os PINs não conferem');return}
+  sec.pinHash=await managerHash(pin);sec.failedAttempts=0;sec.lockUntil=0;sec.lastChangedAt=nowISO();save();toast('PIN do gerente salvo');
+}
+async function verifyManagerPin(){
+  const sec=state.managerSecurity;
+  if(!sec.pinHash){toast('Cadastre primeiro o PIN do gerente');await setManagerPin();return false}
+  if(sec.lockUntil>Date.now()){toast('Acesso bloqueado. Aguarde '+Math.ceil((sec.lockUntil-Date.now())/1000)+'s');return false}
+  const pin=prompt('🔐 PIN DO GERENTE\\nAutorize o fechamento do caixa:');if(pin===null)return false;
+  if(await managerHash(pin)===sec.pinHash){sec.failedAttempts=0;sec.lockUntil=0;save();return true}
+  sec.failedAttempts=(sec.failedAttempts||0)+1;
+  if(sec.failedAttempts>=3){sec.failedAttempts=0;sec.lockUntil=Date.now()+60000;save();toast('3 tentativas erradas. Bloqueado por 60 segundos.')}
+  else{save();toast('PIN incorreto. Tentativa '+sec.failedAttempts+' de 3.')}
+  return false;
+}
+window.setManagerPin=setManagerPin;window.verifyManagerPin=verifyManagerPin;
+
 function renderPro(){
   if(!document.getElementById('proStockCost'))return;
   let cost=state.products.reduce((a,p)=>a+p.stock*p.cost,0),sale=state.products.reduce((a,p)=>a+p.stock*p.price,0),low=state.products.filter(p=>p.stock<=p.min);
@@ -519,7 +572,7 @@ function renderPro(){
   lotList.innerHTML=state.lots.slice().sort((a,b)=>(a.expiry||'9999').localeCompare(b.expiry||'9999')).map(l=>{let d=l.expiry?Math.ceil((new Date(l.expiry+'T12:00:00')-today)/86400000):99999,status=d<0?'VENCIDO':d<=7?'Vence em '+d+' dia(s)':d<=30?'Vence em '+d+' dias':'OK',cls=d<0?'pro-danger':d<=30?'pro-warn':'pro-ok';return `<div class="pro-item"><div><b>${esc(l.productName)}</b><div class="pro-muted">Lote ${esc(l.lot||'—')} · ${esc(l.code||'')}</div></div><div>${l.expiry?new Date(l.expiry+'T12:00:00').toLocaleDateString('pt-BR'):'Sem validade'}</div><div class="pro-hide-mobile">${l.qty} un.</div><div><span class="pro-badge ${cls}">${status}</span></div><div class="pro-actions"><button class="btn red" onclick="deleteLot('${l.id}')">Excluir</button></div></div>`}).join('')||'<div class="empty">Nenhum lote registrado.</div>';
   supplierList.innerHTML=state.suppliers.map(x=>`<div class="pro-item"><div><b>${esc(x.name)}</b><div class="pro-muted">${esc(x.note||'')}</div></div><div>${esc(x.phone||'—')}</div><div class="pro-hide-mobile">${esc(x.doc||'—')}</div><div class="pro-hide-mobile">${new Date(x.created).toLocaleDateString('pt-BR')}</div><div class="pro-actions"><button class="btn red" onclick="deleteSupplier('${x.id}')">Excluir</button></div></div>`).join('')||'<div class="empty">Nenhum fornecedor cadastrado.</div>';
   let open=state.cashSessions.find(x=>!x.closedAt);
-  cashControl.innerHTML=open?`<div class="grid4"><div class="stat"><small>Operador</small><strong style="font-size:16px">${esc(open.operator)}</strong></div><div class="stat"><small>Fundo inicial</small><strong>${money(open.opening)}</strong></div><div class="stat"><small>Aberto em</small><strong style="font-size:13px">${new Date(open.openedAt).toLocaleString('pt-BR')}</strong></div><div class="stat"><small>Status</small><strong style="font-size:16px">ABERTO</strong></div></div><div class="formgrid" style="margin-top:10px"><div class="field"><label>Dinheiro contado</label><input id="cashCounted" type="number" min="0" step="0.01"/></div><div class="field"><label>Observação</label><input id="cashClosingNote"/></div></div><button class="btn red" style="margin-top:10px" onclick="closeCashSession()">Fechar caixa</button>`:`<div class="formgrid"><div class="field"><label>Operador</label><input id="cashOperator" placeholder="Nome do operador"/></div><div class="field"><label>Fundo inicial (R$)</label><input id="cashOpening" type="number" min="0" step="0.01" value="0"/></div></div><button class="btn primary" style="margin-top:10px" onclick="openCashSession()">Abrir caixa</button>`;
+  cashControl.innerHTML=open?`<div class="grid4"><div class="stat"><small>Operador</small><strong style="font-size:16px">${esc(open.operator)}</strong></div><div class="stat"><small>Fundo inicial</small><strong>${money(open.opening)}</strong></div><div class="stat"><small>Aberto em</small><strong style="font-size:13px">${new Date(open.openedAt).toLocaleString('pt-BR')}</strong></div><div class="stat"><small>Status</small><strong style="font-size:16px">ABERTO</strong></div></div><div class="formgrid" style="margin-top:10px"><div class="field"><label>Dinheiro contado</label><input id="cashCounted" type="number" min="0" step="0.01"/></div><div class="field"><label>Observação</label><input id="cashClosingNote"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn red" onclick="closeCashSession()">🔐 Fechar caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div><div style="font-size:12px;color:var(--muted);margin-top:8px">Somente o gerente com PIN pode concluir o fechamento.</div>`:`<div class="formgrid"><div class="field"><label>Operador</label><input id="cashOperator" placeholder="Nome do operador"/></div><div class="field"><label>Fundo inicial (R$)</label><input id="cashOpening" type="number" min="0" step="0.01" value="0"/></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn primary" onclick="openCashSession()">Abrir caixa</button><button class="btn ghost" onclick="setManagerPin()">🔑 ${state.managerSecurity.pinHash?'Trocar PIN do gerente':'Cadastrar PIN do gerente'}</button></div>`;
   cashHistory.innerHTML=state.cashSessions.filter(x=>x.closedAt).slice().reverse().slice(0,20).map(x=>`<div class="pro-item"><div><b>${esc(x.operator)}</b><div class="pro-muted">${new Date(x.openedAt).toLocaleString('pt-BR')}</div></div><div>Inicial<br><b>${money(x.opening)}</b></div><div>Contado<br><b>${money(x.counted)}</b></div><div class="pro-hide-mobile">Fechado<br>${new Date(x.closedAt).toLocaleString('pt-BR')}</div><span class="pro-badge pro-ok">Fechado</span></div>`).join('')||'<div class="empty">Nenhum fechamento realizado.</div>';
   replenishmentList.innerHTML=low.map(p=>{let suggested=Math.max((p.min*2)-p.stock,1);return `<div class="pro-item"><div><b>${esc(p.name)}</b><div class="pro-muted">${esc(p.code)} · ${esc(p.category||'')}</div></div><div>Atual<br><b>${p.stock}</b></div><div>Mínimo<br><b>${p.min}</b></div><div>Sugestão<br><b>${suggested} un.</b></div><span class="pro-badge pro-warn">REPOR</span></div>`}).join('')||'<div class="empty">Estoque em dia. Nenhum item abaixo do mínimo.</div>';
 }
@@ -527,7 +580,7 @@ function switchProTab(tab){document.querySelectorAll('.propage').forEach(x=>x.cl
 window.deleteLot=id=>{if(confirm('Excluir este lote/validade?')){state.lots=state.lots.filter(x=>x.id!==id);save()}};
 window.deleteSupplier=id=>{if(confirm('Excluir este fornecedor?')){state.suppliers=state.suppliers.filter(x=>x.id!==id);save()}};
 window.openCashSession=()=>{let op=document.getElementById('cashOperator')?.value.trim();if(!op)return toast('Informe o operador');state.cashSessions.push({id:proUid(),operator:op,opening:Number(document.getElementById('cashOpening').value)||0,openedAt:nowISO(),closedAt:null});save();toast('Caixa aberto')};
-window.closeCashSession=()=>{let x=state.cashSessions.find(x=>!x.closedAt);if(!x)return;x.counted=Number(document.getElementById('cashCounted').value)||0;x.note=document.getElementById('cashClosingNote').value.trim();x.closedAt=nowISO();save();toast('Caixa fechado')};
+window.closeCashSession=async()=>{let x=state.cashSessions.find(x=>!x.closedAt);if(!x)return;if(!(await verifyManagerPin()))return;x.counted=Number(document.getElementById('cashCounted').value)||0;x.note=document.getElementById('cashClosingNote').value.trim();x.closedAt=nowISO();x.closedByManager=true;x.managerAuthorizedAt=nowISO();save();toast('Caixa fechado com autorização do gerente')};
 document.querySelectorAll('.protab').forEach(b=>b.onclick=()=>switchProTab(b.dataset.protab));
 document.getElementById('saveLotBtn').onclick=()=>{let p=state.products.find(x=>x.id===lotProduct.value),qty=Number(lotQty.value)||0;if(!p||qty<=0)return toast('Selecione o produto e informe a quantidade');state.lots.push({id:proUid(),productId:p.id,productName:p.name,code:p.code,lot:lotNumber.value.trim(),expiry:lotExpiry.value,qty,created:nowISO()});lotNumber.value='';lotExpiry.value='';lotQty.value=1;save();toast('Lote salvo')};
 document.getElementById('saveSupplierBtn').onclick=()=>{let name=supplierName.value.trim();if(!name)return toast('Informe o fornecedor');state.suppliers.push({id:proUid(),name,phone:supplierPhone.value.trim(),doc:supplierDoc.value.trim(),note:supplierNote.value.trim(),created:nowISO()});supplierName.value=supplierPhone.value=supplierDoc.value=supplierNote.value='';save();toast('Fornecedor salvo')};
