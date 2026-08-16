@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V9 Interface Profissional</title>
+  <title>Mercado Caixa Pro V10 Interface Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -162,7 +162,7 @@ main{width:100%}
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V9 Scanner Contínuo + Gerente</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V10 Busca Multi-Base</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -417,55 +417,84 @@ function renderProducts(){let q=(document.getElementById('stockSearch').value||'
 function renderEntrySelected(){let sel=document.getElementById('entryProduct');if(!sel)return;let p=state.products.find(x=>x.id===sel.value),box=document.getElementById('entrySelected');if(!box)return;if(!p){box.innerHTML='<div style="color:var(--muted)">Nenhum produto selecionado.<br>Escaneie ou escolha um produto abaixo.</div>';return}box.innerHTML=`<div class="name">${esc(p.name)}</div><div class="meta">Código: <b>${esc(p.code||'sem código')}</b> · ${esc(p.category||'sem categoria')}${p.brand?' · '+esc(p.brand):''}${p.package?' · '+esc(p.package):''}</div><div class="stock">Estoque atual: ${p.stock} unidade(s) · Custo atual: ${money(p.cost)} · Venda: ${money(p.price)}</div>${p.referencePrice>0?`<div style="font-size:11px;color:var(--muted);margin-top:5px">Preço online de referência: ${money(p.referencePrice)}${p.referencePriceDate?' · '+esc(p.referencePriceDate):''}</div>`:''}`}
 function selectEntryProduct(p){if(!p)return;document.getElementById('entryProduct').value=p.id;document.getElementById('entryCode').value=p.code||'';document.getElementById('entryCost').value=p.cost||'';renderEntrySelected();setTimeout(()=>document.getElementById('entryQty').focus(),40)}
 async function lookupExternalProduct(code){
-  let info=null, priceInfo=null;
+  const clean=normalizeCode(code);
+  const fields='code,product_name,product_name_pt,generic_name,brands,categories,quantity,image_front_url,image_url,labels,ingredients_text,packaging,stores,countries';
+  const sources=[
+    {name:'Open Food Facts',url:`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(clean)}.json?fields=${fields}`},
+    {name:'Open Products Facts',url:`https://world.openproductsfacts.org/api/v2/product/${encodeURIComponent(clean)}.json?fields=${fields}`},
+    {name:'Open Beauty Facts',url:`https://world.openbeautyfacts.org/api/v2/product/${encodeURIComponent(clean)}.json?fields=${fields}`},
+    {name:'Open Pet Food Facts',url:`https://world.openpetfoodfacts.org/api/v2/product/${encodeURIComponent(clean)}.json?fields=${fields}`}
+  ];
 
-  // Dados do produto
-  try{
-    const url=`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=code,product_name,product_name_pt,brands,categories,quantity,image_front_url,labels,ingredients_text`;
-    const r=await fetch(url,{headers:{'Accept':'application/json'}});
-    if(r.ok){
+  const collected=[];
+  const fetchOne=async src=>{
+    try{
+      const ctrl=new AbortController();
+      const t=setTimeout(()=>ctrl.abort(),4500);
+      const r=await fetch(src.url,{headers:{'Accept':'application/json'},signal:ctrl.signal,cache:'no-store'});
+      clearTimeout(t);
+      if(!r.ok)return null;
       const d=await r.json();
-      if(d.status===1&&d.product){
-        const x=d.product, name=(x.product_name_pt||x.product_name||'').trim();
-        if(name){
-          info={
-            name,
-            brand:(x.brands||'').split(',')[0].trim(),
-            category:(x.categories||'').split(',')[0].trim(),
-            package:x.quantity||'',
-            image:x.image_front_url||'',
-            labels:x.labels||'',
-            ingredients:x.ingredients_text||''
-          };
-        }
+      if(Number(d.status)!==1 || !d.product)return null;
+      const x=d.product;
+      const obj={
+        source:src.name,
+        name:(x.product_name_pt||x.product_name||x.generic_name||'').trim(),
+        brand:(x.brands||'').split(',')[0]?.trim()||'',
+        category:(x.categories||'').split(',')[0]?.trim()||'',
+        package:x.quantity||x.packaging||'',
+        image:x.image_front_url||x.image_url||'',
+        labels:x.labels||'',
+        ingredients:x.ingredients_text||'',
+        stores:x.stores||'',
+        countries:x.countries||''
+      };
+      return [obj.name,obj.brand,obj.category,obj.package,obj.image].filter(Boolean).length?obj:null;
+    }catch(e){return null}
+  };
+
+  const results=await Promise.all(sources.map(fetchOne));
+  results.filter(Boolean).forEach(x=>collected.push(x));
+
+  let info=null;
+  if(collected.length){
+    collected.sort((a,b)=>[b.name,b.brand,b.category,b.package,b.image].filter(Boolean).length-[a.name,a.brand,a.category,a.package,a.image].filter(Boolean).length);
+    const best=collected[0];
+    info={...best,sources:collected.map(x=>x.source)};
+    for(const x of collected){
+      for(const k of ['name','brand','category','package','image','labels','ingredients','stores','countries']){
+        if(!info[k]&&x[k])info[k]=x[k];
       }
     }
-  }catch(e){}
+  }
 
-  // Preço de referência público. Pode variar por loja, cidade e data.
+  let priceInfo=null;
   try{
-    const u=`https://prices.openfoodfacts.org/api/v1/prices?product_code=${encodeURIComponent(code)}&sort_by=-date&page_size=20`;
-    const r=await fetch(u,{headers:{'Accept':'application/json'}});
+    const ctrl=new AbortController();
+    const t=setTimeout(()=>ctrl.abort(),4500);
+    const u=`https://prices.openfoodfacts.org/api/v1/prices?product_code=${encodeURIComponent(clean)}&sort_by=-date&page_size=50`;
+    const r=await fetch(u,{headers:{'Accept':'application/json'},signal:ctrl.signal,cache:'no-store'});
+    clearTimeout(t);
     if(r.ok){
       const d=await r.json();
-      const arr = Array.isArray(d.items) ? d.items : (Array.isArray(d.results) ? d.results : (Array.isArray(d) ? d : []));
+      const arr=Array.isArray(d.items)?d.items:(Array.isArray(d.results)?d.results:(Array.isArray(d)?d:[]));
       const valid=arr.filter(x=>Number(x.price)>0);
       if(valid.length){
         const brl=valid.filter(x=>String(x.currency||'').toUpperCase()==='BRL');
-        const pool=brl.length?brl:valid;
-        const latest=pool[0];
-        priceInfo={
-          price:Number(latest.price)||0,
-          currency:(latest.currency||'').toUpperCase(),
-          date:latest.date||latest.created||'',
-          source:'Open Prices'
-        };
+        const latest=(brl.length?brl:valid)[0];
+        priceInfo={price:Number(latest.price)||0,currency:String(latest.currency||'').toUpperCase(),date:latest.date||latest.created||'',source:'Open Prices'};
       }
     }
   }catch(e){}
 
-  if(!info && !priceInfo) return null;
-  return Object.assign(info||{}, {referencePrice:priceInfo?.price||0, priceCurrency:priceInfo?.currency||'', priceDate:priceInfo?.date||'', priceSource:priceInfo?.source||''});
+  if(!info && !priceInfo)return null;
+  return Object.assign(info||{},{
+    referencePrice:priceInfo?.price||0,
+    priceCurrency:priceInfo?.currency||'',
+    priceDate:priceInfo?.date||'',
+    priceSource:priceInfo?.source||'',
+    lookupSources:(info?.sources||[]).concat(priceInfo?['Open Prices']:[])
+  });
 }
 function setLookupStatus(html,show=true){let el=document.getElementById('entryLookupStatus');if(!el)return;el.style.display=show?'block':'none';el.innerHTML=html||''}
 async function smartEntryLookup(code){
@@ -473,7 +502,7 @@ async function smartEntryLookup(code){
   let local=state.products.find(x=>normalizeCode(x.code)===code);
   if(local){
     selectEntryProduct(local);
-    setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b><br>🌐 Conferindo se existem dados ou preço mais recentes...');
+    setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b><br>🌐 Consultando várias bases para completar os dados e procurar preço...');
     try{
       const info=await lookupExternalProduct(code);
       if(info){
@@ -492,7 +521,7 @@ async function smartEntryLookup(code){
           if(!local.price || local.price<=0) local.price=info.referencePrice;
         }
         save(); renderAll(); selectEntryProduct(local);
-        setLookupStatus('✅ <b>'+esc(local.name)+'</b> atualizado automaticamente.'+(info.referencePrice>0?'<br>💰 Preço de referência encontrado: <b>'+money(info.referencePrice)+'</b> <small>(pode variar por loja/região)</small>':''));
+        setLookupStatus('✅ <b>'+esc(local.name)+'</b> atualizado automaticamente.'+(info.lookupSources?.length?'<br><small>Fontes: '+esc(info.lookupSources.join(' + '))+'</small>':'')+(info.referencePrice>0?'<br>💰 Preço de referência encontrado: <b>'+money(info.referencePrice)+'</b> <small>(pode variar por loja/região)</small>':''));
       }else{
         setLookupStatus('✅ Produto encontrado no estoque: <b>'+esc(local.name)+'</b>');
       }
@@ -502,7 +531,7 @@ async function smartEntryLookup(code){
   if(lookupBusy)return; lookupBusy=true; setLookupStatus('🌐 Produto novo. Buscando nome, marca e dados automaticamente...');
   let info=await lookupExternalProduct(code); lookupBusy=false;
   if(info){
-    let obj={id:crypto.randomUUID(),name:info.name||('Produto '+code),code,category:info.category||'Não informada',brand:info.brand||'',package:info.package||'',image:info.image||'',labels:info.labels||'',ingredients:info.ingredients||'',min:5,stock:0,cost:0,price:info.referencePrice||0,referencePrice:info.referencePrice||0,referencePriceCurrency:info.priceCurrency||'',referencePriceDate:info.priceDate||'',referencePriceSource:info.priceSource||''};
+    let obj={id:crypto.randomUUID(),name:info.name||('Produto '+code),code,category:info.category||'Não informada',brand:info.brand||'',package:info.package||'',image:info.image||'',labels:info.labels||'',ingredients:info.ingredients||'',min:5,stock:0,cost:0,price:info.referencePrice||0,referencePrice:info.referencePrice||0,referencePriceCurrency:info.priceCurrency||'',referencePriceDate:info.priceDate||'',referencePriceSource:info.priceSource||'',lookupSources:info.lookupSources||[]};
     state.products.push(obj); save(); selectEntryProduct(obj);
     setLookupStatus('✅ <b>'+esc(obj.name)+'</b>'+(obj.brand?' · '+esc(obj.brand):'')+(obj.package?' · '+esc(obj.package):'')+(obj.price>0?'<br>💰 Preço de referência: <b>'+money(obj.price)+'</b> <small>(pode variar por loja/região)</small>':'')+'<br>Cadastro criado automaticamente. Agora informe a quantidade que chegou.');
     toast('Produto identificado automaticamente'); return;
@@ -613,6 +642,7 @@ async function refreshAllProductsOnline(){
         if(info.image) p.image=info.image;
         if(info.labels) p.labels=info.labels;
         if(info.ingredients) p.ingredients=info.ingredients;
+        if(info.lookupSources?.length)p.lookupSources=info.lookupSources;
         if(info.referencePrice>0){
           p.referencePrice=info.referencePrice;
           p.referencePriceCurrency=info.priceCurrency||'BRL';
