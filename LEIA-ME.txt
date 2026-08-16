@@ -1,14 +1,12 @@
-MERCADO CAIXA PRO V4 — ESTOQUE INTELIGENTE
+MERCADO CAIXA PRO V5 — COMPACTO + EXCLUSÃO
 
 Novidades:
-- Entrada por câmera no Android ou webcam no computador.
-- Leitura de EAN/UPC/Code 128/QR quando suportado pelo navegador.
-- Primeiro procura o código no estoque local.
-- Produto novo: consulta automática online no Open Food Facts.
-- Quando encontrado, cadastra nome, marca, categoria e embalagem automaticamente.
-- Depois da identificação, basta informar a quantidade recebida; custo é opcional.
-- Se não houver dados online, abre cadastro manual uma única vez.
-- Leitor USB também funciona digitando o código e Enter.
+- Carrinho em uma única linha por produto, inclusive no Android.
+- Botão X compacto para excluir item do carrinho.
+- Botão Excluir no estoque, com confirmação.
+- Lista das últimas entradas na própria tela Entrada.
+- Exclusão de entrada desfaz automaticamente a quantidade do estoque quando possível.
+- Mantém scanner por câmera/webcam e leitor USB.
+- Layout responsivo sem rolagem horizontal.
 
-IMPORTANTE:
-A consulta automática precisa de internet. A câmera funciona melhor em Chrome/Edge e em site HTTPS. Nem todo código existe em bases públicas; nesses casos o cadastro manual continua disponível. Preço de custo e preço de venda são dados do próprio mercado e não vêm do código de barras.
+Para câmera no celular/computador, publique em HTTPS e permita acesso à câmera.
