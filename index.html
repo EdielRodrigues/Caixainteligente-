@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V7 Profissional</title>
+  <title>Mercado Caixa Pro V8 Interface Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -89,11 +89,80 @@
 @media(max-width:520px){.pro-form4{grid-template-columns:1fr}.pro-item{padding:8px;font-size:12px}.pro-tabs{margin-left:-2px;margin-right:-2px}}
 
 </style>
+
+<style id="v8-ui-polish">
+/* ===== V8 UI PROFISSIONAL / MOBILE FIRST ===== */
+:root{--radius-xl:22px;--radius-lg:17px;--radius-md:13px}
+body{-webkit-tap-highlight-color:transparent}
+main{width:100%}
+.topbar{padding:2px 0 5px}
+.topbar .btn{white-space:nowrap}
+.panel,.stat{backdrop-filter:blur(8px)}
+.stat{min-width:0}.stat small{display:block;line-height:1.25}.stat strong{overflow-wrap:anywhere}
+
+/* Gestão: desktop elegante */
+.pro-tabs{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px!important;overflow:visible!important;padding:0 0 10px!important}
+.pro-tabs .btn{width:100%!important;min-width:0!important;white-space:normal!important;line-height:1.15;text-align:center;padding:11px 8px!important;min-height:48px}
+.pro-tabs .protab.active{box-shadow:0 8px 24px rgba(34,197,94,.18)}
+.pro-list{gap:10px}.pro-item{background:linear-gradient(180deg,rgba(24,34,51,.9),rgba(15,24,39,.9));border-color:#334155;padding:12px 13px;border-radius:16px}
+.pro-item>div:first-child{min-width:0}.pro-item>div:first-child b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pro-muted{line-height:1.35}.pro-badge{font-weight:800}
+
+/* barra inferior: 6 itens sem arrastar */
+.mobilebar{overflow:visible!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:3px;padding:7px max(4px,env(safe-area-inset-right)) calc(7px + env(safe-area-inset-bottom)) max(4px,env(safe-area-inset-left))!important}
+.mobilebar button{min-width:0!important;width:100%!important;flex:none!important;padding:7px 1px!important;font-size:10px!important;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mobilebar button.active{box-shadow:inset 0 0 0 1px rgba(148,163,184,.08)}
+
+/* estoque e entrada mais limpos */
+.row-actions{max-width:100%}.row-actions .btn{white-space:normal}
+.entry-selected{box-shadow:inset 0 1px 0 rgba(255,255,255,.025)}
+.cartitem{box-shadow:0 5px 16px rgba(0,0,0,.12)}
+
+@media(max-width:900px){
+ main{padding:10px 10px calc(78px + env(safe-area-inset-bottom))!important}
+ .topbar{margin-bottom:12px}
+ .topbar h2{font-size:22px!important;line-height:1.15}
+ .topbar .date{font-size:12px;margin-top:3px}
+ .topbar .btn{padding:9px 10px!important;font-size:11px!important;border-radius:11px}
+ .panel{border-radius:18px;margin-top:11px;box-shadow:0 12px 34px rgba(0,0,0,.2)}
+ .stat{border-radius:18px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+}
+
+@media(max-width:620px){
+ .pro-tabs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+ .pro-tabs .btn{font-size:11px!important;padding:9px 4px!important;min-height:46px}
+ .pro-tabs .btn:nth-child(4),.pro-tabs .btn:nth-child(5){grid-column:auto}
+ .grid4{gap:9px!important}
+ .stat{padding:13px!important;min-height:112px;display:flex;flex-direction:column;justify-content:center}
+ .stat small{font-size:12px}.stat strong{font-size:22px!important;margin-top:7px!important}
+ .panel h3{font-size:18px}
+ .pro-item{grid-template-columns:minmax(0,1fr) auto!important;gap:8px;padding:10px!important}
+ .pro-item .pro-hide-mobile{display:none!important}
+ .pro-actions{justify-content:flex-end}
+ .row-actions{display:grid!important;grid-template-columns:1fr 1fr;width:100%;gap:7px}
+ .row-actions .btn{width:100%!important;padding:9px 7px!important;font-size:11px!important}
+}
+
+@media(max-width:420px){
+ main{padding-left:8px!important;padding-right:8px!important}
+ .topbar{gap:7px}.topbar h2{font-size:20px!important}.topbar .btn{font-size:10px!important;padding:8px!important}
+ .grid4{grid-template-columns:1fr 1fr!important;gap:7px!important}
+ .stat{padding:11px!important;min-height:98px;border-radius:16px}.stat small{font-size:11px}.stat strong{font-size:19px!important}
+ .panel{padding:11px!important;border-radius:16px}
+ .pro-tabs{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .pro-tabs .btn:last-child{grid-column:1/-1}
+ .pro-tabs .btn{font-size:11px!important;min-height:42px}
+ .pro-item{border-radius:14px}
+ .mobilebar{gap:1px!important;padding-left:2px!important;padding-right:2px!important}
+ .mobilebar button{font-size:9px!important;padding:7px 0!important;letter-spacing:-.15px}
+ .cartitem{grid-template-columns:minmax(0,1fr) auto auto 22px!important}
+}
+</style>
 </head>
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V7 Dados Automáticos</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V8 Interface Profissional</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -163,11 +232,11 @@
 
     <section id="gestao" class="screen">
       <div class="pro-tabs">
-        <button class="btn primary protab active" data-protab="resumo">📊 Resumo</button>
-        <button class="btn ghost protab" data-protab="validade">📅 Validade / Lotes</button>
-        <button class="btn ghost protab" data-protab="fornecedores">🚚 Fornecedores</button>
-        <button class="btn ghost protab" data-protab="fechamento">💰 Fechamento</button>
-        <button class="btn ghost protab" data-protab="reposicao">🛒 Reposição</button>
+        <button class="btn primary protab active" data-protab="resumo" title="Resumo geral">📊 Resumo</button>
+        <button class="btn ghost protab" data-protab="validade" title="Validade e lotes">📅 Validade</button>
+        <button class="btn ghost protab" data-protab="fornecedores" title="Fornecedores">🚚 Fornecedores</button>
+        <button class="btn ghost protab" data-protab="fechamento" title="Fechamento de caixa">💰 Fechamento</button>
+        <button class="btn ghost protab" data-protab="reposicao" title="Reposição de estoque">🛒 Reposição</button>
       </div>
 
       <div id="pro-resumo" class="propage active">
