@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V14 Point Fila Inteligente</title>
+  <title>Mercado Caixa Pro V15 Point Validação Real</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -720,13 +720,32 @@ function renderPendingPointOrder(){
   box.className='mp-point-status warn';
   box.innerHTML='⏳ Cobrança pendente: <b>'+esc(p.orderId)+'</b><div class="mp-point-actions"><button class="btn ghost mini" type="button" onclick="checkPendingPointOrder()">🔄 Consultar</button><button class="btn danger mini" type="button" onclick="cancelPendingPointOrder()">✕ Cancelar cobrança</button></div>';
 }
-async function checkPendingPointOrder(){
-  const p=getPendingPointOrder();if(!p)return renderMpPointStatus('Nenhuma cobrança pendente salva.','ok');
-  try{const d=await mpPointGetOrder(p.orderId),st=getMpOrderStatus(d);if(isMpApproved(d)){clearPendingPointOrder();renderMpPointStatus('✅ A cobrança pendente foi aprovada.','ok')}else if(isMpFinalFailure(d)){clearPendingPointOrder();renderMpPointStatus('Cobrança anterior: '+esc(st)+'. Agora você pode tentar novamente.','ok')}else renderPendingPointOrder()}catch(e){renderMpPointStatus('❌ '+esc(e.message),'bad')}
+async function checkPendingPointOrder(silent=false){
+  const p=getPendingPointOrder();
+  if(!p){if(!silent)renderMpPointConfigStatus();return null}
+  try{
+    const d=await mpPointGetOrder(p.orderId),st=getMpOrderStatus(d);
+    if(isMpApproved(d)){clearPendingPointOrder();renderMpPointStatus('✅ A cobrança anterior foi aprovada.','ok');return d}
+    if(isMpFinalFailure(d)){clearPendingPointOrder();renderMpPointStatus('✅ A cobrança anterior está '+esc(st)+'. Pendência local removida.','ok');return d}
+    if(['created','at_terminal','action_required','processing'].includes(st)){renderPendingPointOrder();return d}
+    clearPendingPointOrder();renderMpPointStatus('ℹ️ A cobrança anterior não está mais pendente ('+esc(st||'sem status')+'). Registro local removido.','ok');return d
+  }catch(e){
+    const code=String(e.mpCode||'').toLowerCase();
+    if(e.httpStatus===404||code==='order_not_found'){clearPendingPointOrder();renderMpPointStatus('✅ A cobrança salva não existe mais no Mercado Pago. Pendência local removida.','ok');return null}
+    renderMpPointStatus('❌ Não foi possível validar a cobrança: '+esc(e.message),'bad');return null
+  }
 }
 async function cancelPendingPointOrder(){
   const p=getPendingPointOrder();if(!p)return;
-  try{renderMpPointStatus('⏳ Cancelando cobrança anterior...','warn');await mpPointCancelOrder(p.orderId);clearPendingPointOrder();renderMpPointStatus('✅ Cobrança anterior cancelada. Pode enviar uma nova.','ok')}catch(e){renderMpPointStatus('❌ '+esc(e.message),'bad')}
+  try{
+    const current=await mpPointGetOrder(p.orderId),st=getMpOrderStatus(current);
+    if(isMpApproved(current)||isMpFinalFailure(current)){clearPendingPointOrder();return renderMpPointStatus('ℹ️ Esta cobrança já está '+esc(st)+'. Pendência removida.','ok')}
+    renderMpPointStatus('⏳ Cancelando cobrança anterior...','warn');
+    await mpPointCancelOrder(p.orderId,st==='at_terminal');clearPendingPointOrder();renderMpPointStatus('✅ Cobrança anterior cancelada. Pode enviar uma nova.','ok')
+  }catch(e){
+    if(e.httpStatus===404||String(e.mpCode||'').toLowerCase()==='order_not_found'){clearPendingPointOrder();return renderMpPointStatus('✅ A cobrança não existe mais no Mercado Pago. Pendência local removida.','ok')}
+    renderMpPointStatus('❌ '+esc(e.message),'bad')
+  }
 }
 async function setupPointPdv(){
   const out=document.getElementById('mpSetupResult');
@@ -757,18 +776,18 @@ async function mpPointCreateOrder({saleId,total,payment,installments=1}){
   if(!r.ok)throw new Error(mpErrorMessage(d,'Falha ao criar cobrança na Point'));
   return d;
 }
+function makeMpHttpError(d,r,fallback){const e=new Error(mpErrorMessage(d,fallback));e.httpStatus=r.status;e.mpCode=mpErrorCode(d);e.mpData=d;return e}
 async function mpPointGetOrder(orderId){
-  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId),{
-    headers:{'Accept':'application/json'}
-  });
+  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId),{headers:{'Accept':'application/json'}});
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(mpErrorMessage(d,'Falha ao consultar pagamento'));
+  if(!r.ok)throw makeMpHttpError(d,r,'Falha ao consultar pagamento');
   return d;
 }
-async function mpPointCancelOrder(orderId){
-  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId)+'/cancel',{method:'POST'});
+async function mpPointCancelOrder(orderId,allowAtTerminal=false){
+  const url=cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId)+'/cancel'+(allowAtTerminal?'?allow_at_terminal=1':'');
+  const r=await fetch(url,{method:'POST'});
   const d=await r.json().catch(()=>({}));
-  if(!r.ok)throw new Error(mpErrorMessage(d,'Falha ao cancelar cobrança'));
+  if(!r.ok)throw makeMpHttpError(d,r,'Falha ao cancelar cobrança');
   return d;
 }
 function getMpOrderId(d){return d.id||d.order_id||d.orderId||d.data?.id||''}
@@ -832,7 +851,7 @@ document.getElementById('mpPointSettingsBtn').onclick=openMpPointSettings;
 document.getElementById('closeMpPointModal').onclick=()=>mpPointModal.classList.remove('open');
 document.getElementById('saveMpPointSettings').onclick=saveMpPointSettings;
 document.getElementById('setupPdvBtn').onclick=setupPointPdv;
-renderPaymentExtra();renderMpPointConfigStatus();renderPendingPointOrder();
+renderPaymentExtra();renderMpPointConfigStatus();if(getPendingPointOrder())checkPendingPointOrder(true);
 
 document.getElementById('finishSale').onclick=async()=>{
   if(!cart.length)return toast('Carrinho vazio');
