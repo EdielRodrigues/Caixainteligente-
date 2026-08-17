@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V11 Interface Profissional</title>
+  <title>Mercado Caixa Pro V12 Interface Profissional</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -167,12 +167,22 @@ main{width:100%}
 .payment-summary .stat strong{font-size:16px}
 @media(max-width:600px){.payment-summary{grid-template-columns:1fr 1fr}.payment-extra{grid-template-columns:1fr}}
 
+
+.mp-point-box{margin-top:12px;padding:12px;border:1px solid rgba(127,127,127,.2);border-radius:14px;background:rgba(59,130,246,.06)}
+.mp-point-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.mp-point-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.mp-point-status{margin-top:9px;padding:10px;border-radius:11px;background:rgba(127,127,127,.1);font-size:12px}
+.mp-point-status.ok{background:rgba(34,197,94,.12)}
+.mp-point-status.warn{background:rgba(245,158,11,.12)}
+.mp-point-status.bad{background:rgba(239,68,68,.12)}
+@media(max-width:600px){.mp-point-grid{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
 <div class="app">
   <aside>
-    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V11 Pagamentos Avançados</small></div>
+    <div class="brand"><h1>🛒 Mercado Caixa Pro</h1><small>PDV + Estoque • V12 Mercado Pago Point</small></div>
     <div class="nav">
       <button class="active" data-screen="dashboard">📊 Visão geral</button>
       <button data-screen="caixa">💵 Caixa / Venda</button>
@@ -207,6 +217,13 @@ main{width:100%}
 </div>
 <select id="payment" style="display:none"><option>Dinheiro</option><option>Pix</option><option>Cartão de débito</option><option>Cartão de crédito</option></select>
 <div id="paymentExtra" class="payment-extra"></div>
+<div class="mp-point-box" id="mpPointBox">
+  <div class="mp-point-head">
+    <div><b>🟦 Mercado Pago Point</b><div style="font-size:11px;color:var(--muted)">TEF / maquininha integrada</div></div>
+    <button type="button" class="btn ghost mini" id="mpPointSettingsBtn">⚙️ Configurar</button>
+  </div>
+  <div class="mp-point-status" id="mpPointStatus">Não configurado.</div>
+</div>
 </div><div class="field" style="margin-top:9px"><label>Desconto (R$)</label><input id="discount" type="number" step="0.01" min="0" value="0"/></div><div class="field" style="margin-top:9px"><label>Valor recebido (R$)</label><input id="received" type="number" step="0.01" min="0" placeholder="Para calcular troco"/></div><div class="totalbox"><div class="totalline"><span>Subtotal</span><b id="subtotal">R$ 0,00</b></div><div class="totalline"><span>Desconto</span><b id="discountView">R$ 0,00</b></div><div class="totalline"><span>Troco</span><b id="changeView">R$ 0,00</b></div><hr style="border-color:#315b3e"><strong id="grandTotal">R$ 0,00</strong></div><button class="btn primary" id="finishSale" style="width:100%;margin-top:10px">Finalizar venda</button><button class="btn ghost" id="clearCart" style="width:100%;margin-top:8px">Limpar carrinho</button></div>
       </div>
     </section>
@@ -311,6 +328,16 @@ main{width:100%}
 </div>
 
 <div class="modal" id="productModal"><div class="modalbox"><div class="modalhead"><h3 id="modalTitle">Novo produto</h3><button id="closeModal">✕</button></div><input type="hidden" id="productId"><div class="formgrid" style="grid-template-columns:1fr 1fr;margin-top:12px"><div class="field"><label>Nome</label><input id="pName"/></div><div class="field"><label>Código / código de barras</label><div style="display:grid;grid-template-columns:1fr auto;gap:6px"><input id="pCode"/><button class="btn blue" id="scanProductBtn" type="button">📷</button></div></div><div class="field"><label>Categoria</label><input id="pCategory"/></div><div class="field"><label>Marca</label><input id="pBrand"/></div><div class="field"><label>Embalagem / quantidade</label><input id="pPackage" placeholder="Ex.: 1 L, 500 g"/></div><div class="field"><label>Estoque mínimo</label><input id="pMin" type="number" min="0" value="5"/></div><div class="field"><label>Estoque inicial</label><input id="pStock" type="number" min="0" value="0"/></div><div class="field"><label>Custo unitário (R$)</label><input id="pCost" type="number" min="0" step="0.01"/></div><div class="field"><label>Preço de venda (R$)</label><input id="pPrice" type="number" min="0" step="0.01"/></div></div><button class="btn primary" id="saveProduct" style="width:100%;margin-top:14px">Salvar produto</button></div></div>
+<div class="modal" id="mpPointModal"><div class="modalbox">
+  <div class="modalhead"><div><h3 style="margin:0">🟦 Mercado Pago Point</h3><small style="color:var(--muted)">Estrutura para integração via backend</small></div><button id="closeMpPointModal">✕</button></div>
+  <div class="mp-point-grid">
+    <div class="field"><label>URL do backend</label><input id="mpBackendUrl" placeholder="https://seu-backend.com"/></div>
+    <div class="field"><label>ID do terminal Point</label><input id="mpTerminalId" placeholder="TERMINAL_ID"/></div>
+  </div>
+  <div class="field" style="margin-top:9px"><label>Modo</label><select id="mpMode"><option value="test">Teste</option><option value="production">Produção</option></select></div>
+  <div style="font-size:12px;color:var(--muted);margin-top:10px">O Access Token fica somente no backend. Nunca coloque a chave privada neste HTML.</div>
+  <button class="btn primary" id="saveMpPointSettings" style="width:100%;margin-top:12px">Salvar configuração</button>
+</div></div>
 <div class="modal" id="scannerModal"><div class="modalbox scannerbox"><div class="modalhead"><div><h3 style="margin:0">📷 Leitor de código</h3><small style="color:var(--muted)">Aponte a câmera para o código de barras ou QR Code</small></div><button id="closeScanner">✕</button></div><div class="camera-frame"><video id="scannerVideo" autoplay playsinline muted></video><div class="scan-target"></div><div class="scan-line"></div></div><div class="scanner-status" id="scannerStatus">Preparando câmera...</div><div class="scanner-actions"><button class="btn" id="switchCameraBtn">🔄 Trocar câmera</button><button class="btn amber" id="torchBtn" style="display:none">🔦 Lanterna</button><button class="btn red" id="stopScannerBtn">✕ Fechar câmera</button></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -322,6 +349,7 @@ const todayKey=()=>new Date().toISOString().slice(0,10);
 let state=JSON.parse(localStorage.getItem(DBKEY)||'null')||{products:[],moves:[],sales:[]};
 state.products=state.products||[];state.moves=state.moves||[];state.sales=state.sales||[];state.suppliers=state.suppliers||[];state.lots=state.lots||[];state.cashSessions=state.cashSessions||[];
 state.managerSecurity=state.managerSecurity||{pinHash:'',failedAttempts:0,lockUntil:0,lastChangedAt:null};
+state.mpPoint=state.mpPoint||{backendUrl:'',terminalId:'',mode:'test'};
 let cart=[];
 const save=()=>{localStorage.setItem(DBKEY,JSON.stringify(state));renderAll()};
 const toast=t=>{let e=document.getElementById('toast');e.textContent=t;e.style.display='block';setTimeout(()=>e.style.display='none',2200)};
@@ -637,6 +665,79 @@ document.getElementById('newProductBtn').onclick=()=>openProduct();document.getE
 document.getElementById('saveProduct').onclick=()=>{let id=document.getElementById('productId').value;let obj={id:id||crypto.randomUUID(),name:document.getElementById('pName').value.trim(),code:document.getElementById('pCode').value.trim(),category:document.getElementById('pCategory').value.trim(),brand:document.getElementById('pBrand').value.trim(),package:document.getElementById('pPackage').value.trim(),min:Number(document.getElementById('pMin').value)||0,stock:Number(document.getElementById('pStock').value)||0,cost:Number(document.getElementById('pCost').value)||0,price:Number(document.getElementById('pPrice').value)||0};if(!obj.name)return toast('Informe o nome do produto');if(obj.code){let dup=state.products.find(p=>p.id!==id&&normalizeCode(p.code)===normalizeCode(obj.code));if(dup)return toast('Este código já pertence a '+dup.name)}let old=state.products.find(p=>p.id===id);if(old){let diff=obj.stock-old.stock;if(diff!==0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'ajuste',productId:obj.id,productName:obj.name,qty:diff,unit:obj.cost,total:diff*obj.cost,note:'Ajuste manual de estoque'});Object.assign(old,obj)}else{state.products.push(obj);if(obj.stock>0)state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:obj.id,productName:obj.name,qty:obj.stock,unit:obj.cost,total:obj.stock*obj.cost,note:'Estoque inicial'})}document.getElementById('productModal').classList.remove('open');let savedId=obj.id;save();if(pendingEntryAfterSave){pendingEntryAfterSave=false;pendingEntryCode='';nav('entradas');let saved=state.products.find(p=>p.id===savedId);if(saved)selectEntryProduct(saved)}toast('Produto salvo')};
 document.getElementById('saveEntry').onclick=()=>{let id=document.getElementById('entryProduct').value,p=state.products.find(x=>x.id===id),qty=Number(document.getElementById('entryQty').value)||0,cost=Number(document.getElementById('entryCost').value);if(!p||qty<=0)return toast('Informe produto e quantidade');if(!Number.isNaN(cost)&&cost>0)p.cost=cost;p.stock+=qty;state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'entrada',productId:p.id,productName:p.name,qty,unit:p.cost,total:qty*p.cost,note:document.getElementById('entryNote').value.trim()});document.getElementById('entryQty').value=1;document.getElementById('entryCost').value=p.cost||'';document.getElementById('entryNote').value='';save();document.getElementById('entryProduct').value=p.id;renderEntrySelected();toast('Entrada registrada: +'+qty+' '+p.name)};
 
+
+function cleanBackendUrl(v){return String(v||'').trim().replace(/\/+$/,'')}
+function renderMpPointStatus(text,cls=''){
+  const el=document.getElementById('mpPointStatus');if(!el)return;
+  el.className='mp-point-status'+(cls?' '+cls:'');el.innerHTML=text;
+}
+function renderMpPointConfigStatus(){
+  if(!state.mpPoint?.backendUrl||!state.mpPoint?.terminalId){
+    renderMpPointStatus('⚠️ Mercado Pago Point ainda não configurado.','warn');return;
+  }
+  renderMpPointStatus('✅ Backend configurado • Terminal: <b>'+esc(state.mpPoint.terminalId)+'</b> • '+(state.mpPoint.mode==='production'?'Produção':'Teste'),'ok');
+}
+function openMpPointSettings(){
+  mpBackendUrl.value=state.mpPoint.backendUrl||'';
+  mpTerminalId.value=state.mpPoint.terminalId||'';
+  mpMode.value=state.mpPoint.mode||'test';
+  mpPointModal.classList.add('open');
+}
+function saveMpPointSettings(){
+  const backendUrl=cleanBackendUrl(mpBackendUrl.value),terminalId=mpTerminalId.value.trim(),mode=mpMode.value;
+  if(!backendUrl||!/^https?:\/\//i.test(backendUrl))return toast('Informe uma URL válida do backend');
+  if(!terminalId)return toast('Informe o ID do terminal Point');
+  state.mpPoint={backendUrl,terminalId,mode};save();mpPointModal.classList.remove('open');renderMpPointConfigStatus();toast('Mercado Pago Point configurado');
+}
+async function mpPointCreateOrder({saleId,total,payment,installments=1}){
+  if(!state.mpPoint?.backendUrl||!state.mpPoint?.terminalId)throw new Error('Mercado Pago Point não configurado');
+  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      external_reference:saleId,
+      total_amount:Number(total.toFixed(2)),
+      payment_method:payment,
+      installments:Number(installments||1),
+      terminal_id:state.mpPoint.terminalId,
+      mode:state.mpPoint.mode
+    })
+  });
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.message||d.error||'Falha ao criar cobrança na Point');
+  return d;
+}
+async function mpPointGetOrder(orderId){
+  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId),{
+    headers:{'Accept':'application/json'}
+  });
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.message||d.error||'Falha ao consultar pagamento');
+  return d;
+}
+async function mpPointCancelOrder(orderId){
+  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders/'+encodeURIComponent(orderId)+'/cancel',{method:'POST'});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.message||d.error||'Falha ao cancelar cobrança');
+  return d;
+}
+function getMpOrderId(d){return d.id||d.order_id||d.orderId||d.data?.id||''}
+function getMpOrderStatus(d){return String(d.status||d.order_status||d.data?.status||'').toLowerCase()}
+function isMpApproved(d){const s=getMpOrderStatus(d);return ['processed','approved','paid','completed'].includes(s)}
+function isMpFinalFailure(d){const s=getMpOrderStatus(d);return ['canceled','cancelled','expired','failed','rejected'].includes(s)}
+async function waitForMpPointPayment(orderId){
+  const started=Date.now(),timeout=180000;
+  while(Date.now()-started<timeout){
+    const d=await mpPointGetOrder(orderId);
+    const status=getMpOrderStatus(d)||'aguardando';
+    renderMpPointStatus('⏳ Status da Point: <b>'+esc(status)+'</b><br><small>Aguardando o cliente concluir na maquininha...</small>','warn');
+    if(isMpApproved(d))return d;
+    if(isMpFinalFailure(d))throw new Error('Pagamento '+status);
+    await new Promise(r=>setTimeout(r,2000));
+  }
+  throw new Error('Tempo de espera da Point esgotado');
+}
+
 function renderPaymentExtra(){
   const pay=document.getElementById('payment').value;
   const box=document.getElementById('paymentExtra');
@@ -677,20 +778,52 @@ function paymentTotalsForSession(session){
   return out;
 }
 document.querySelectorAll('.pay-btn').forEach(b=>b.onclick=()=>choosePayment(b.dataset.pay));
-renderPaymentExtra();
+document.getElementById('mpPointSettingsBtn').onclick=openMpPointSettings;
+document.getElementById('closeMpPointModal').onclick=()=>mpPointModal.classList.remove('open');
+document.getElementById('saveMpPointSettings').onclick=saveMpPointSettings;
+renderPaymentExtra();renderMpPointConfigStatus();
 
-document.getElementById('finishSale').onclick=()=>{
+document.getElementById('finishSale').onclick=async()=>{
   if(!cart.length)return toast('Carrinho vazio');
   for(let c of cart){let p=state.products.find(x=>x.id===c.id);if(!p||p.stock<c.qty)return toast('Estoque insuficiente para '+c.name)}
   let sub=cart.reduce((a,c)=>a+c.price*c.qty,0),disc=Math.max(0,Number(discount.value)||0),total=Math.max(0,sub-disc),details=getPaymentDetails(),pay=details.payment,saleId=crypto.randomUUID();
   if(pay==='Dinheiro'){
-    const rec=Number(received.value)||0;
-    if(rec<total)return toast('Valor recebido menor que o total');
+    const rec=Number(received.value)||0;if(rec<total)return toast('Valor recebido menor que o total');
     details.received=rec;details.change=Math.max(0,rec-total);
   }
-  if(pay==='Pix' && details.pixStatus==='Pendente'){
+  if(pay==='Pix'&&details.pixStatus==='Pendente'){
     if(!confirm('O Pix está marcado como PENDENTE. Deseja registrar a venda mesmo assim?'))return;
   }
+
+  // Para débito/crédito, usa Mercado Pago Point quando configurado.
+  if(pay==='Cartão de débito'||pay==='Cartão de crédito'){
+    if(!state.mpPoint?.backendUrl||!state.mpPoint?.terminalId){
+      if(!confirm('Mercado Pago Point não está configurado. Deseja registrar o cartão manualmente mesmo assim?'))return;
+    }else{
+      try{
+        finishSale.disabled=true;finishSale.textContent='Enviando para a Point...';
+        renderMpPointStatus('📡 Enviando cobrança de <b>'+money(total)+'</b> para a maquininha...','warn');
+        const created=await mpPointCreateOrder({saleId,total,payment:pay,installments:details.installments||1});
+        const orderId=getMpOrderId(created);
+        if(!orderId)throw new Error('Backend não retornou o ID da order');
+        details.mercadoPagoOrderId=orderId;
+        details.terminalId=state.mpPoint.terminalId;
+        const result=await waitForMpPointPayment(orderId);
+        details.mercadoPagoStatus=getMpOrderStatus(result);
+        details.mercadoPagoResponse=result;
+        details.reference=result.transactions?.[0]?.id||result.transaction_id||details.reference||'';
+        details.authorizationCode=result.transactions?.[0]?.payment_method?.authorization_code||result.authorization_code||'';
+        renderMpPointStatus('✅ Pagamento aprovado na Mercado Pago Point.','ok');
+      }catch(e){
+        renderMpPointStatus('❌ '+esc(e.message||'Pagamento não aprovado'),'bad');
+        toast(e.message||'Pagamento não aprovado');
+        finishSale.disabled=false;finishSale.textContent='Finalizar venda';return;
+      }finally{
+        if(finishSale.disabled){finishSale.disabled=false;finishSale.textContent='Finalizar venda'}
+      }
+    }
+  }
+
   for(let c of cart){
     let p=state.products.find(x=>x.id===c.id);p.stock-=c.qty;
     state.moves.push({id:crypto.randomUUID(),date:nowISO(),type:'venda',saleId,productId:p.id,productName:p.name,qty:-c.qty,unit:c.price,total:c.price*c.qty,note:pay});
