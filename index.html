@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0f172a" />
-  <title>Mercado Caixa Pro V15 Point Validação Real</title>
+  <title>Mercado Caixa Pro V16 Point Validação Real</title>
   <link rel="manifest" href="manifest.json" />
   <style>
     :root{
@@ -758,8 +758,19 @@ async function setupPointPdv(){
     renderMpPointStatus('✅ Modo PDV solicitado. Reinicie a Point e depois faça uma venda de teste.','ok');
   }catch(e){out.className='mp-point-status bad';out.textContent='❌ '+e.message;renderMpPointStatus('❌ '+esc(e.message),'bad')}
 }
+async function mpPointPreflight(){
+  const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/terminals',{headers:{'Accept':'application/json'}});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw makeMpHttpError(d,r,'Não foi possível verificar a maquininha');
+  const list=d?.data?.terminals||d?.terminals||[];
+  const t=list.find(x=>String(x.id)===String(state.mpPoint.terminalId));
+  if(!t)throw new Error('A maquininha configurada não foi encontrada na conta Mercado Pago');
+  if(String(t.operating_mode||'').toUpperCase()!=='PDV')throw new Error('A maquininha não está em modo PDV');
+  return t;
+}
 async function mpPointCreateOrder({saleId,total,payment,installments=1}){
   if(!state.mpPoint?.backendUrl||!state.mpPoint?.terminalId)throw new Error('Mercado Pago Point não configurado');
+  await mpPointPreflight();
   const r=await fetch(cleanBackendUrl(state.mpPoint.backendUrl)+'/api/mercadopago/point/orders',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
@@ -795,16 +806,51 @@ function getMpOrderStatus(d){return String(d.status||d.order_status||d.data?.sta
 function isMpApproved(d){const s=getMpOrderStatus(d);return ['processed','approved','paid','completed'].includes(s)}
 function isMpFinalFailure(d){const s=getMpOrderStatus(d);return ['canceled','cancelled','expired','failed','rejected'].includes(s)}
 async function waitForMpPointPayment(orderId){
-  const started=Date.now(),timeout=180000;
+  const started=Date.now(),timeout=16*60*1000;
+  let warnedCreated=false;
   while(Date.now()-started<timeout){
     const d=await mpPointGetOrder(orderId);
     const status=getMpOrderStatus(d)||'aguardando';
-    renderMpPointStatus('⏳ Status da Point: <b>'+esc(status)+'</b><br><small>Aguardando o cliente concluir na maquininha...</small>','warn');
+    const detail=String(d.status_detail||d.data?.status_detail||'');
+    const elapsed=Math.floor((Date.now()-started)/1000);
+
+    if(status==='created'){
+      renderMpPointStatus(
+        '🟡 Cobrança criada no Mercado Pago<br>'+
+        '<b>Aguardando a Point capturar a cobrança...</b><br>'+
+        '<small>Order: '+esc(orderId)+' • '+elapsed+'s</small>',
+        'warn'
+      );
+      if(elapsed>=30 && !warnedCreated){
+        warnedCreated=true;
+        toast('A cobrança foi criada, mas a maquininha ainda não capturou. Confira se a Point está ligada, online e no modo PDV.');
+      }
+    }else if(status==='at_terminal'){
+      renderMpPointStatus(
+        '🟢 Cobrança chegou na maquininha<br>'+
+        '<b>Conclua o pagamento na Point.</b><br>'+
+        '<small>Order: '+esc(orderId)+'</small>',
+        'ok'
+      );
+    }else if(status==='action_required'){
+      renderMpPointStatus(
+        '⚠️ A Point precisa de uma ação para concluir.<br>'+
+        '<small>Confira a tela da maquininha. Order: '+esc(orderId)+'</small>',
+        'warn'
+      );
+    }else{
+      renderMpPointStatus(
+        '⏳ Status da Point: <b>'+esc(status)+'</b>'+
+        (detail?'<br><small>'+esc(detail)+'</small>':''),
+        'warn'
+      );
+    }
+
     if(isMpApproved(d))return d;
-    if(isMpFinalFailure(d))throw new Error('Pagamento '+status);
+    if(isMpFinalFailure(d))throw new Error('Pagamento '+status+(detail?' — '+detail:''));
     await new Promise(r=>setTimeout(r,2000));
   }
-  throw new Error('Tempo de espera da Point esgotado');
+  throw new Error('A cobrança expirou sem ser capturada/concluída na Point');
 }
 
 function renderPaymentExtra(){
